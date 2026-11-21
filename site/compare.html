@@ -148,16 +148,12 @@ function draw() {
   $('#h-where').textContent = site ? 'Where this site sits' : kind === 'dist' ? `How ${distName(name)} compare` : kind === 'loc' ? `How ${name} compares` : 'How the region compares with Virginia';
   $('#l-where').textContent = within ? `Comparing only with ${sName}.` : kind === 'dist' ? 'The broader levels include every program type, so this shows how the district sits within the whole community. Use the toggle to compare with public schools only.' : 'The broader levels include all site types. Use the toggle to compare only with the same site type.';
   const diff = (a, b) => { const d = Math.round(a - b); return (d > 0 ? '+' : '') + d; };
-  // A difference smaller than ~2 standard errors is within normal variation for a group this size.
-  const regSD = (() => { const v = ALL.map(s => s.tp), m = mean(v); return Math.sqrt(sum(v.map(x => (x - m) ** 2)) / v.length); })();
-  const sdOf = l => { if (l.list && l.n >= 5) { const v = l.list.map(s => s.tp), m = mean(v); return Math.sqrt(sum(v.map(x => (x - m) ** 2)) / v.length); } return regSD; };
-  const quiet = (l) => focus.k === 'site' ? '' : focus.n < 5 ? ' · too few sites to compare reliably' : Math.abs(focus.tp - l.tp) < 2 * sdOf(focus) / Math.sqrt(focus.n) ? ' · within normal variation' : '';
-  $('#kpis').innerHTML = kpis([[f0(focus.tp), `average total points · ${esc(focus.label)}`], ...others.map(l => [`${diff(focus.tp, l.tp)} pts`, `vs. ${esc(l.label)} (${f0(l.tp)})${quiet(l)}`])]);
+  $('#kpis').innerHTML = kpis([[f0(focus.tp), `average total points · ${esc(focus.label)}`], ...others.map(l => [`${diff(focus.tp, l.tp)} pts`, `vs. ${esc(l.label)} (${f0(l.tp)})`])]);
   // Plain-language cautions
   const notes = [];
   if (kind === 'dist' || (site && site.type === PS)) notes.push(`<b>About school districts:</b> these figures cover only public-school sites in VQB5 (pre-K and birth-to-five programs), not every school in the division or the division as a whole.`);
   const small = levels.filter(l => l.k !== 'site' && l.k !== 'state' && l.n < 5);
-  if (small.length) notes.push(`<b>Small group:</b> ${small.map(l => `${esc(l.label)} has only ${l.n} ${l.n === 1 ? 'site' : 'sites'}`).join('; ')}. Averages and percentages for so few sites can swing a lot and should not be read as the group's overall quality.`);
+  if (small.length) notes.push(`${small.map(l => `${esc(l.label)} includes ${l.n} ${l.n === 1 ? 'site' : 'sites'}`).join('; ')}.`);
   if (site && !within) notes.push(`Percentiles compare this site with all site types; turn on the toggle to compare with ${TLABEL[site.type].toLowerCase()} only.`);
   const nb = $('#c-notes'); nb.style.display = notes.length ? '' : 'none'; nb.innerHTML = notes.join('<br>');
 
@@ -192,7 +188,7 @@ function draw() {
   ];
   if (site) rows.push(["Site's percentile in this group", ...levels.map(l => l.k === 'site' ? '–' : ordP(pctOf(l)))]);
   $('#t-compare').innerHTML = table(['', ...levels.map(l => `<span style="color:${LV[l.k].color}">●</span> ${LV[l.k].short}`)], rows);
-  $('#n-compare').textContent = `Region and Virginia columns include ${sName}. Points are 2025-26 VQB5 rating points (100–800). ` + (site ? 'Percentile = share of the group scoring below this site (ties count half). ' : '') + 'Averages for very small groups can swing widely.';
+  $('#n-compare').textContent = `Region and Virginia columns include ${sName}. Points are 2025-26 VQB5 rating points (100–800). ` + (site ? 'Percentile = share of the group scoring below this site (ties count half). ' : '');
 
   // Ranking: school districts (public schools) or localities, as a dot plot
   const isDist = kind === 'dist';

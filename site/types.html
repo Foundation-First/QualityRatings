@@ -18,8 +18,7 @@
 function draw() {
   const S = SUMMARY, cur = S.years['2025-26'], st = S.statewide['2025-26'], n = cur.n;
   const order = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg), av = t => Math.round(cur.byType[t].avg);
-  const gap = Math.abs(cur.byType[order[1]].avg - cur.byType[order[2]].avg);
-  $('#answer').innerHTML = `<b>${TLABEL[order[0]]}</b> average <b>${av(order[0])}</b> points. ` + (gap < 10 ? `${TLABEL[order[1]]} (<b>${av(order[1])}</b>) and ${TLABEL[order[2]].toLowerCase()} (<b>${av(order[2])}</b>) are too close to call a difference.` : `${TLABEL[order[1]]} average <b>${av(order[1])}</b> and ${TLABEL[order[2]].toLowerCase()} <b>${av(order[2])}</b>.`);
+  $('#answer').innerHTML = `Average score: ` + order.map((t, i) => `${i ? TLABEL[t].toLowerCase() : TLABEL[t]} <b>${av(t)}</b>`).join(', ') + ` points.`;
   const rows = [...order].reverse();   // plotly lists bottom-up, so the highest ends on top
   plot('c-avg', [
     {name: 'RRNC', type: 'scatter', mode: 'markers+text', x: rows.map(t => cur.byType[t].avg), y: rows.map(t => TLABEL[t]), text: rows.map(t => av(t)), textposition: 'top center', marker: {size: 15, color: P.rrnc, line: {width: 1.5, color: '#fff'}}, hovertemplate: '%{y}: %{x:.0f}<extra>RRNC</extra>'},

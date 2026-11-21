@@ -120,7 +120,7 @@ function update() {
   $('#count').innerHTML = `Showing ${FILTERED.length.toLocaleString()} of ${ALL.length.toLocaleString()} sites` + (active.length ? ` <span class="note" style="font-weight:600">· narrowed by ${active.map(esc).join('; ')}</span> <a href="#" id="clear-f">Clear</a>` : '');
   const cf = $('#clear-f'); if (cf) cf.onclick = ev => { ev.preventDefault(); $('#reset').click(); };
   const sn = $('#smalln');
-  if (sn) { sn.style.display = FILTERED.length < 20 ? '' : 'none'; sn.textContent = FILTERED.length ? `Small selection: only ${FILTERED.length} ${FILTERED.length === 1 ? 'site matches' : 'sites match'}. Averages and percentages for so few sites can swing widely; read them as examples, not as the typical result.` : 'No sites match these filters.'; }
+  if (sn) { sn.style.display = FILTERED.length < 20 ? '' : 'none'; sn.textContent = FILTERED.length ? `Based on ${FILTERED.length} ${FILTERED.length === 1 ? 'site' : 'sites'}.` : 'No sites match these filters.'; }
   onChange();
 }
 
