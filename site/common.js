@@ -1,8 +1,13 @@
 // Shared data loading, filter bar, brand palette and chart helpers for all pages.
 const P = {blue: '#11689B', navy: '#0E3F66', green: '#99CA3C', greenD: '#6FA82B', orange: '#F7941D', grey: '#98999B', lightBlue: '#9CC3DB', ink: '#23323f', grid: '#e9eef2'};
-const RATINGS = ['Needs Support', 'Meets Expectations', 'Exceeds Expectations'];
-const RCOLOR = {'Needs Support': P.orange, 'Meets Expectations': P.lightBlue, 'Exceeds Expectations': P.greenD};
-const rcolor = r => RCOLOR[r];
+// VQB5 is read through 100-point score ranges (as in the regional summaries), shown on one neutral sequential scale.
+const RANGES = ['399 or less', '400-499', '500-599', '600-699', '700-800'];
+const RANGE_COLORS = ['#D3E4F0', '#A9C9DD', '#6FA3C7', '#11689B', '#0E3F66'];
+const RANGE_TEXT = ['#23323f', '#23323f', '#23323f', '#fff', '#fff'];
+const rangeIdx = v => v == null ? -1 : v <= 399 ? 0 : v <= 499 ? 1 : v <= 599 ? 2 : v <= 699 ? 3 : 4;
+const rangeOf = v => v == null ? null : RANGES[rangeIdx(v)];
+// share of `list` (sites with a total score) in each range -> counts array
+const rangeCounts = list => { const c = RANGES.map(() => 0); list.forEach(s => { const i = rangeIdx(s.tp); if (i >= 0) c[i]++; }); return c; };
 const TYPES = ['Center', 'Public School', 'Family Day Home'];
 const TLABEL = {Center: 'Child care centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based child care'};
 const TCOLOR = {Center: P.blue, 'Public School': '#6B7F91', 'Family Day Home': P.green};
@@ -25,7 +30,7 @@ let DATA, SUMMARY, CLASS, BENCH, ALL, FILTERED = [], onChange = () => {};
 const FILTERS = [
   ['county', 'Locality', s => [s.county]],
   ['type', 'Site type', s => [s.type]],
-  ['rating', 'Quality rating', s => [s.rating]],
+  ['range', 'Score range (total points)', s => [rangeOf(s.tp)]],
   ['rooms', 'Age group served', s => s.rooms],
   ['fund', 'Public funding', s => s.fund],
   ['honor', 'Honor roll', s => s.honor],
@@ -60,7 +65,7 @@ function refreshOptions() {
     for (const s of ALL) if (match(s, k)) for (const v of get(s)) if (v) counts[v] = (counts[v] || 0) + 1;
     if (state[k] && !(state[k] in counts)) delete state[k];
     let keys = Object.keys(counts).sort();
-    if (k === 'rating') keys = RATINGS.filter(r => counts[r]);
+    if (k === 'range') keys = RANGES.filter(r => counts[r]);
     const sel = $('#f-' + k);
     sel.innerHTML = '<option value="">All</option>' + keys.map(v => `<option value="${esc(v)}">${esc(v)} (${counts[v]})</option>`).join('');
     sel.value = state[k] || '';
@@ -108,7 +113,7 @@ const NAV = `<div class="stripe"></div><header><div class="wrap">
 <div class="brand"><img src="img/ff-logo.png" alt="Foundation First – Building Early Childhood Success"><h1>VQB5 Quality Ratings Dashboard<small>Ready Region North Central · 2025-26 program year</small></h1>
 <div class="logos"><img class="rr" src="img/rrnc-logo.png" alt="Ready Region North Central" style="height:52px"></div></div>
 <nav><a data-p="summary" href="index.html">Summary</a><a data-p="compare" href="compare.html">Compare levels</a><a data-p="class" href="class.html">CLASS observations</a><a data-p="overview" href="ratings.html">Explore ratings</a>
-<a data-p="trends" href="trends.html">Trends</a><a data-p="programs" href="programs.html">Curriculum &amp; funding</a><a data-p="sites" href="sites.html">Find a site</a></nav></div></header>
+<a data-p="trends" href="trends.html">Trends</a><a data-p="programs" href="programs.html">Curriculum &amp; funding</a></nav></div></header>
 <div id="filters"><div class="wrap"><div class="bar"><b>Filter these charts</b><span id="count"></span></div><div class="grid-f"></div></div></div>`;
 const FOOT = `<footer class="wrap">Source: <a href="https://earlychildhoodquality.doe.virginia.gov/quality-ratings/">Virginia Department of Education VQB5 Quality Rating Data</a> (2023-24 to 2025-26) and Ready Region North Central CLASS and coaching summaries. Statewide figures are aggregates shown for comparison. This is an independent visualization; VDOE's published data is the official record.</footer>`;
 document.head.insertAdjacentHTML('beforeend', '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap">');

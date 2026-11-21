@@ -38,9 +38,7 @@
 <script src="common.js"></script>
 <script>
 const LV = {site: {color: P.orange, short: 'Site'}, dist: {color: P.greenD, short: 'School district'}, loc: {color: '#2A9D8F', short: 'Locality'}, region: {color: P.blue, short: 'Region'}, state: {color: P.grey, short: 'Virginia'}};
-const BIN_L = ['399 or less', '400-499', '500-599', '600-699', '700-800'];
-const BIN_C = [P.orange, '#FBC77A', P.lightBlue, P.blue, P.greenD];
-const binOf = v => v <= 399 ? 0 : v <= 499 ? 1 : v <= 599 ? 2 : v <= 699 ? 3 : 4;
+const BIN_L = RANGES, BIN_C = RANGE_COLORS, binOf = rangeIdx;
 const ord = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
 const ordP = p => p == null ? '–' : ord(p);
 const f0 = v => v == null ? '–' : Math.round(v).toLocaleString();
@@ -73,13 +71,12 @@ function writeHash() {
 
 function stats(list) {
   const v = k => list.map(s => s[k]).filter(x => x != null);
-  const c = r => list.filter(s => s.rating === r).length, bins = BIN_L.map(() => 0);
-  list.forEach(s => { if (s.tp != null) bins[binOf(s.tp)]++; });
-  return {n: list.length, tp: mean(v('tp')), ip: mean(v('ip')), cp: mean(v('cp')), meets: c('Meets Expectations') + c('Exceeds Expectations'), exceeds: c('Exceeds Expectations'), bins};
+  const bins = rangeCounts(list);
+  return {n: list.length, tp: mean(v('tp')), ip: mean(v('ip')), cp: mean(v('cp')), bins};
 }
 function stateStats(g) {
   const b = BENCH.state[g || 'all'];
-  return {n: b.n, tp: b.tp, ip: b.ip, cp: b.cp, meets: b.ratings['Meets Expectations'] + b.ratings['Exceeds Expectations'], exceeds: b.ratings['Exceeds Expectations'], bins: b.bins, hist: b.hist, start: b.start, step: b.step};
+  return {n: b.n, tp: b.tp, ip: b.ip, cp: b.cp, bins: b.bins, hist: b.hist, start: b.start, step: b.step};
 }
 function pctileState(g, v) {
   const b = BENCH.state[g || 'all'], i = Math.min(b.hist.length - 1, Math.max(0, Math.floor((v - b.start) / b.step)));
@@ -163,13 +160,13 @@ function draw() {
   const pctOf = l => l.k === 'state' ? pctileState(regionType, site.tp) : pctileList(l.list, site.tp);
   if (site) {
     const parts = others.map(l => `${pctOf(l)}% ${l.k === 'state' ? 'of Virginia ' + sName : l.k === 'region' ? 'in the region' : 'in ' + esc(l.label.replace(/^[^:]+: /, '')) + (l.k === 'dist' ? ' schools' : '')}`);
-    $('#i-dist').innerHTML = `<b>${esc(site.name)}</b> scored <b>${f0(site.tp)}</b> points (${esc(site.rating)}), higher than about ${parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0]}.`;
+    $('#i-dist').innerHTML = `<b>${esc(site.name)}</b> scored <b>${f0(site.tp)}</b> points, higher than about ${parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0]}.`;
   } else $('#i-dist').innerHTML = `${esc(focus.label)} averages <b>${f0(focus.tp)}</b> points: ` + others.map(l => `<b>${diff(focus.tp, l.tp)}</b> vs. ${esc(l.label)}`).join(', ') + '.';
 
   // Share of sites by 100-point range
   const order = [...levels].reverse();
   plot('c-bins', BIN_L.map((b, i) => ({name: b, type: 'bar', orientation: 'h', y: order.map(l => LV[l.k].short), x: order.map(l => 100 * l.bins[i] / (sum(l.bins) || 1)), marker: {color: BIN_C[i]}, customdata: order.map(l => l.bins[i]),
-    text: order.map(l => { const p = 100 * l.bins[i] / (sum(l.bins) || 1); return p >= 7 ? Math.round(p) + '%' : ''; }), textposition: 'inside', insidetextfont: {color: i === 3 ? '#fff' : P.ink},
+    text: order.map(l => { const p = 100 * l.bins[i] / (sum(l.bins) || 1); return p >= 7 ? Math.round(p) + '%' : ''; }), textposition: 'inside', insidetextfont: {color: RANGE_TEXT[i]},
     hovertemplate: `%{y}<br>${b} points: %{customdata} sites (%{x:.0f}%)<extra></extra>`})),
     {barmode: 'stack', xaxis: {title: '% of sites', range: [0, 100]}, yaxis: {autorange: 'reversed'}, legend: {orientation: 'h', y: -0.42, title: {text: 'Points: '}}, margin: {t: 10, r: 10, b: 110, l: 95}});
 
@@ -180,8 +177,8 @@ function draw() {
     ['Average total points', ...levels.map(l => `<b>${f0(l.tp)}</b>`)],
     ['Average interaction points (CLASS)', ...levels.map(l => f0(l.ip))],
     ['Average curriculum points', ...levels.map(l => f0(l.cp))],
-    ['Meets or Exceeds Expectations', ...levels.map(l => l.k === 'site' ? yes(site.rating !== 'Needs Support') : pc(l.meets, l.n))],
-    ['Exceeds Expectations', ...levels.map(l => l.k === 'site' ? yes(site.rating === 'Exceeds Expectations') : pc(l.exceeds, l.n))],
+    ['Score 500–599 (mid range)', ...levels.map(l => l.k === 'site' ? yes(site.tp >= 500 && site.tp < 600) : pc(l.bins[2], sum(l.bins)))],
+    ['Score 600 or higher', ...levels.map(l => l.k === 'site' ? yes(site.tp >= 600) : pc(l.bins[3] + l.bins[4], sum(l.bins)))],
   ];
   if (site) rows.push(["Site's percentile in this group", ...levels.map(l => l.k === 'site' ? '–' : ordP(pctOf(l)))]);
   $('#t-compare').innerHTML = table(['', ...levels.map(l => `<span style="color:${dark(LV[l.k].color)}">●</span> ${LV[l.k].short}`)], rows);

@@ -7,27 +7,27 @@
 <main class="wrap">
 <div class="kpis" id="kpis"></div>
 
-<section><h2>Where sites land</h2><p class="lead">VQB5 combines classroom interaction scores (CLASS) and curriculum use into a rating on a 100–800 point scale. Nearly every site meets expectations, so the useful question is <i>where within that range</i> sites fall.</p>
+<section><h2>Where sites land</h2><p class="lead">VQB5 combines classroom interaction scores (CLASS) and curriculum use into a total score from 100 to 800. Meets Expectations covers 400–699 points, a wide range, so these views show where within it sites fall.</p>
 <div class="grid">
  <div class="card"><h3>Sites by 100-point range and site type</h3><p>Number of sites in each score range.</p><div id="c-bins" class="chart"></div><div class="insight" id="i-bins"></div></div>
- <div class="card"><h3>Quality ratings by site type</h3><p>Number of sites by rating; Head Start grantees are included in public schools and centers.</p><div class="tbl" id="t-type-rating"></div><div class="insight" id="i-type"></div></div>
+ <div class="card"><h3>Score ranges by site type</h3><p>Number of sites in each range; Head Start grantees are included in public schools and centers.</p><div class="tbl" id="t-type-range"></div><div class="insight" id="i-type"></div></div>
 </div></section>
 
 <section><h2>How the region compares and has changed</h2><p class="lead">North Central compared with all Virginia VQB5 sites over the first three program years.</p>
 <div class="grid">
- <div class="card"><h3>Average rating points</h3><p>Region average vs. statewide average.</p><div id="c-avg" class="chart short"></div><div class="insight" id="i-avg"></div></div>
+ <div class="card"><h3>Average total points</h3><p>Region average vs. statewide average.</p><div id="c-avg" class="chart short"></div><div class="insight" id="i-avg"></div></div>
  <div class="card"><h3>Average points by site type</h3><p>Region (NC) and state, by program year.</p><div class="tbl" id="t-type"></div></div>
- <div class="card"><h3>Quality ratings over time</h3><p>All North Central sites rated each year.</p><div class="tbl" id="t-ratings"></div></div>
- <div class="card"><h3>Sites at either end of the scale</h3><p>Sites rated Exceeds Expectations or Needs Support.</p><div id="c-ends" class="chart short"></div></div>
+ <div class="card"><h3>Score ranges over time</h3><p>Share of North Central sites in each 100-point range (all sites scored that year).</p><div id="c-ranges" class="chart"></div><div class="insight" id="i-ranges"></div></div>
+ <div class="card"><h3>Sites by score range, by year</h3><p>Number and percent of North Central sites in each range.</p><div class="tbl" id="t-ranges"></div></div>
 </div></section>
 
 <section><h2>New and returning sites</h2><p class="lead">The region's case-management approach helps new sites onboard to VQB5.</p>
 <div class="grid">
  <div class="card"><h3>Where new and returning sites score</h3><p>Share of each group in each 100-point range.</p><div id="c-new" class="chart short"></div><div class="insight" id="i-new"></div></div>
- <div class="card"><h3>New sites in 2025-26</h3><p>Sites with no 2024-25 rating (first observed this year).</p><div id="t-new"></div></div>
+ <div class="card"><h3>New sites in 2025-26</h3><p>Sites with no 2024-25 score (first observed this year).</p><div id="t-new"></div></div>
 </div></section>
 
-<section><h2>Honor Rolls</h2><p class="lead">Excellence = Exceeds Expectations. Top Improvement = top 10% for interaction-point gains among returning sites. Top Infant &amp; Toddler = top 10% for infant/toddler interaction scores. A site can appear on more than one list.</p>
+<section><h2>Honor Rolls</h2><p class="lead">Excellence = total score of 700 or higher. Top Improvement = top 10% for interaction-point gains among returning sites. Top Infant &amp; Toddler = top 10% for infant/toddler interaction scores. A site can appear on more than one list.</p>
 <div class="card"><div class="tbl" id="t-honor"></div></div></section>
 
 <p class="note">Percentages may not sum to 100 due to rounding. Regional counts are computed from VDOE's published site-level data and match VDOE and regional summaries. Number of children served is published only in VDOE's statewide PDF and is not included here.</p>
@@ -35,62 +35,64 @@
 <script src="common.js"></script>
 <script>
 const YRS = ['2023-24', '2024-25', '2025-26'];
-const R3 = ['Exceeds Expectations', 'Meets Expectations', 'Needs Support'];
+const RANGE_SHORT = ['≤399', '400-499', '500-599', '600-699', '700-800'];
 
 function draw() {
   const S = SUMMARY, nc = S.years, st = S.statewide, cur = nc['2025-26'], hn = S.honor['2025-26'], hs = S.honorStatewide['2025-26'];
-  const meets = cur.ratings['Exceeds Expectations'] + cur.ratings['Meets Expectations'];
-  const meetsPct = (100 * meets / cur.n).toFixed(1);
+  const B = S.bins, tot = RANGES.map((_, i) => sum(TYPES.map(t => B.byType[t][i])));
+  const midHigh = tot[2] + tot[3], high = tot[3] + tot[4];
   const honorTotal = hn._unique, diff = Math.round(cur.avg - st['2025-26'].avg);
 
-  $('#hero .wrap').innerHTML = `<h2>${meets} of ${cur.n} sites (${meetsPct}%) met or exceeded VQB5 expectations</h2>
-    <p>Ready Region North Central's average rating was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st['2025-26'].avg)}. The biggest opportunity is moving sites from the 500s into the 600s.</p>`;
+  $('#hero .wrap').innerHTML = `<h2>${pc(midHigh, cur.n)} of North Central sites score in the mid-to-high range (500–699 points)</h2>
+    <p>The regional average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st['2025-26'].avg)}. ${pc(tot[3], cur.n)} of sites (${tot[3]}) score 600–699; the biggest opportunity is the ${tot[2]} sites scoring 500–599.</p>`;
   $('#kpis').innerHTML = kpis([
-    [fmt(cur.n), 'sites rated in 2025-26'],
-    [`${Math.round(cur.avg)}`, `average rating points (state ${Math.round(st['2025-26'].avg)})`],
-    [fmt(cur.ratings['Exceeds Expectations']), 'sites rated Exceeds Expectations'],
+    [fmt(cur.n), 'sites scored in 2025-26'],
+    [`${Math.round(cur.avg)}`, `average total points (state ${Math.round(st['2025-26'].avg)})`],
+    [fmt(tot[3]), `sites scoring 600–699 (${pc(tot[3], cur.n)})`],
     [fmt(honorTotal), `sites on an Honor Roll (${pc(honorTotal, cur.n)} of sites)`],
     [fmt(S.newSites.n), 'new sites joined VQB5 this year'],
   ]);
 
-  // --- 100-point ranges
-  const B = S.bins, tot = B.labels.map((_, i) => sum(TYPES.map(t => B.byType[t][i])));
-  plot('c-bins', TYPES.map(t => ({name: TLABEL[t], type: 'bar', x: B.labels, y: B.byType[t], marker: {color: TCOLOR[t]}, hovertemplate: `%{x} points<br>${TLABEL[t]}: %{y} sites<extra></extra>`})),
-    {barmode: 'stack', xaxis: {title: 'Total rating points'}, yaxis: {title: 'Sites'}, annotations: tot.map((v, i) => ({x: B.labels[i], y: v, text: `<b>${v}</b>`, showarrow: false, yshift: 12}))});
-  const mid = tot[2] + tot[3], top600 = tot[3];
-  $('#i-bins').innerHTML = `<b>${pc(mid, cur.n)}</b> of sites score 500–699 and <b>${pc(top600, cur.n)}</b> score 600–699. <b>${tot[2]} sites (${pc(tot[2], cur.n)})</b> are in the 500–599 range, including <b>${B.byType.Center[2]} child care centers</b>, which makes that group the largest opportunity to improve outcomes for children.`;
+  // --- Sites by 100-point range and site type
+  plot('c-bins', TYPES.map(t => ({name: TLABEL[t], type: 'bar', x: RANGES, y: B.byType[t], marker: {color: TCOLOR[t]}, hovertemplate: `%{x} points<br>${TLABEL[t]}: %{y} sites<extra></extra>`})),
+    {barmode: 'stack', xaxis: {title: 'Total score'}, yaxis: {title: 'Sites'}, annotations: tot.map((v, i) => ({x: RANGES[i], y: v, text: `<b>${v}</b>`, showarrow: false, yshift: 12}))});
+  $('#i-bins').innerHTML = `<b>${pc(midHigh, cur.n)}</b> of sites score 500–699 and <b>${pc(tot[3], cur.n)}</b> score 600–699. <b>${tot[2]} sites (${pc(tot[2], cur.n)})</b> are in the 500–599 range, including <b>${B.byType.Center[2]} child care centers</b>, which makes that group the largest opportunity to improve outcomes for children.`;
 
-  // --- ratings by type table
-  const TR = S.typeRatings;
-  $('#t-type-rating').innerHTML = table(['Site type', 'Sites', 'Exceeds', 'Meets', 'Needs Support', 'Avg points'],
-    [...TYPES.map(t => { const n = sum(R3.map(r => TR[t][r])); return [TLABEL[t], n, TR[t]['Exceeds Expectations'], TR[t]['Meets Expectations'], TR[t]['Needs Support'], Math.round(cur.byType[t].avg)]; }),
-     ['<b>All sites</b>', `<b>${cur.n}</b>`, `<b>${cur.ratings['Exceeds Expectations']}</b>`, `<b>${cur.ratings['Meets Expectations']}</b>`, `<b>${cur.ratings['Needs Support']}</b>`, `<b>${Math.round(cur.avg)}</b>`]]);
-  const best = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg);
-  $('#i-type').innerHTML = `<b>${TLABEL[best[0]]}</b> have the highest average (${Math.round(cur.byType[best[0]].avg)} points); <b>${TLABEL[best[2]].toLowerCase()}</b> the lowest (${Math.round(cur.byType[best[2]].avg)}). Across all three site types, at least 99% of sites meet or exceed expectations.`;
+  const share600 = t => { const r = B.byType[t]; return 100 * (r[3] + r[4]) / sum(r); };
+  $('#t-type-range').innerHTML = table(['Site type', 'Sites', ...RANGE_SHORT, 'Avg points'],
+    [...TYPES.map(t => [{Center: 'Centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based'}[t], sum(B.byType[t]), ...B.byType[t], Math.round(cur.byType[t].avg)]),
+     ['<b>All sites</b>', `<b>${cur.n}</b>`, ...tot.map(v => `<b>${v}</b>`), `<b>${Math.round(cur.avg)}</b>`]]);
+  const srt = [...TYPES].sort((a, b) => share600(b) - share600(a));
+  $('#i-type').innerHTML = `<b>${Math.round(share600(srt[0]))}%</b> of ${TLABEL[srt[0]].toLowerCase()} score 600 or higher, compared with <b>${Math.round(share600(srt[1]))}%</b> of ${TLABEL[srt[1]].toLowerCase()} and <b>${Math.round(share600(srt[2]))}%</b> of ${TLABEL[srt[2]].toLowerCase()}.`;
 
   // --- over time
   const line = (name, d, col) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y: YRS.map(y => d[y].avg), text: YRS.map(y => Math.round(d[y].avg)), textposition: 'top center', line: {color: col, width: 3}, marker: {size: 8}, hovertemplate: `%{x}: %{y:.0f} pts<extra>${name}</extra>`});
-  plot('c-avg', [line('Ready Region North Central', nc, P.blue), line('Virginia', st, P.grey)], {yaxis: {title: 'Average rating points', range: [575, 610]}});
-  const gap = nc['2024-25'].avg - st['2024-25'].avg;
+  plot('c-avg', [line('Ready Region North Central', nc, P.blue), line('Virginia', st, P.grey)], {yaxis: {title: 'Average total points', range: [575, 610]}});
   $('#i-avg').innerHTML = `The region's average dipped in 2024-25, then rose <b>${Math.round(nc['2025-26'].avg - nc['2024-25'].avg)} points</b> to ${Math.round(nc['2025-26'].avg)} in 2025-26, keeping the region above the state each year.`;
   const g = x => `<span style="color:var(--mute)">${Math.round(x)}</span>`;
   $('#t-type').innerHTML = table(['Site type', ...YRS.map(y => y.slice(2) + ' NC'), ...YRS.map(y => y.slice(2) + ' state')],
     [...TYPES.map(t => [TLABEL[t], ...YRS.map(y => Math.round(nc[y].byType[t].avg)), ...YRS.map(y => g(st[y].byType[t].avg))]),
      ['<b>All sites</b>', ...YRS.map(y => `<b>${Math.round(nc[y].avg)}</b>`), ...YRS.map(y => g(st[y].avg))]]);
-  $('#t-ratings').innerHTML = table(['Quality rating', ...YRS.map(y => '# ' + y.slice(2)), ...YRS.map(y => '% ' + y.slice(2))],
-    [...R3.map(r => [r, ...YRS.map(y => fmt(nc[y].ratings[r])), ...YRS.map(y => pc(nc[y].ratings[r], nc[y].n))]),
-     ['<b>Total</b>', ...YRS.map(y => `<b>${fmt(nc[y].n)}</b>`), ...YRS.map(() => '<b>100%</b>')]]);
-  plot('c-ends', ['Exceeds Expectations', 'Needs Support'].map(r => ({name: r, type: 'bar', x: YRS, y: YRS.map(y => nc[y].ratings[r]), text: YRS.map(y => nc[y].ratings[r]), textposition: 'outside', cliponaxis: false, marker: {color: rcolor(r)}, hovertemplate: `%{x}: %{y} sites<extra>${r}</extra>`})),
-    {barmode: 'group', yaxis: {title: 'Sites', range: [0, 14]}});
+
+  const yb = YRS.map(y => nc[y].bins), yn = yb.map(sum);
+  plot('c-ranges', RANGES.map((r, i) => ({name: r, type: 'bar', x: YRS, y: YRS.map((_, k) => 100 * yb[k][i] / yn[k]), marker: {color: RANGE_COLORS[i]}, customdata: YRS.map((_, k) => yb[k][i]),
+    text: YRS.map((_, k) => { const p = 100 * yb[k][i] / yn[k]; return p >= 6 ? Math.round(p) + '%' : ''; }), textposition: 'inside', insidetextfont: {color: RANGE_TEXT[i]},
+    hovertemplate: `%{x}<br>${r} points: %{customdata} sites (%{y:.1f}%)<extra></extra>`})),
+    {barmode: 'stack', yaxis: {title: '% of sites', range: [0, 100]}, legend: {orientation: 'h', y: -0.28, title: {text: 'Points: '}}});
+  const hi = k => 100 * (yb[k][3] + yb[k][4]) / yn[k];
+  $('#i-ranges').innerHTML = `Sites scoring 600 or higher went from <b>${Math.round(hi(0))}%</b> in 2023-24 to <b>${Math.round(hi(1))}%</b> in 2024-25 and <b>${Math.round(hi(2))}%</b> in 2025-26.`;
+  $('#t-ranges').innerHTML = table(['Score range', ...YRS.map(y => '# ' + y.slice(2)), ...YRS.map(y => '% ' + y.slice(2))],
+    [...RANGES.map((r, i) => [r, ...YRS.map((_, k) => fmt(yb[k][i])), ...YRS.map((_, k) => pc(yb[k][i], yn[k]))]),
+     ['<b>Total</b>', ...yn.map(v => `<b>${fmt(v)}</b>`), ...YRS.map(() => '<b>100%</b>')]]);
 
   // --- new vs returning
-  const N = S.newSites, retBins = B.labels.map((_, i) => tot[i] - N.newBins[i]);
+  const N = S.newSites, retBins = RANGES.map((_, i) => tot[i] - N.newBins[i]);
   const sh = (a, n) => a.map(v => 100 * v / n);
-  plot('c-new', [{name: `New sites (${N.n})`, type: 'bar', x: B.labels, y: sh(N.newBins, N.n), marker: {color: P.orange}, customdata: N.newBins, hovertemplate: '%{x}: %{customdata} new sites (%{y:.0f}%)<extra></extra>'},
-                 {name: `Returning sites (${N.nReturning})`, type: 'bar', x: B.labels, y: sh(retBins, N.nReturning), marker: {color: P.blue}, customdata: retBins, hovertemplate: '%{x}: %{customdata} returning sites (%{y:.0f}%)<extra></extra>'}],
-    {barmode: 'group', xaxis: {title: 'Total rating points'}, yaxis: {title: '% of group'}});
+  plot('c-new', [{name: `New sites (${N.n})`, type: 'bar', x: RANGES, y: sh(N.newBins, N.n), marker: {color: P.orange}, customdata: N.newBins, hovertemplate: '%{x}: %{customdata} new sites (%{y:.0f}%)<extra></extra>'},
+                 {name: `Returning sites (${N.nReturning})`, type: 'bar', x: RANGES, y: sh(retBins, N.nReturning), marker: {color: P.blue}, customdata: retBins, hovertemplate: '%{x}: %{customdata} returning sites (%{y:.0f}%)<extra></extra>'}],
+    {barmode: 'group', xaxis: {title: 'Total score'}, yaxis: {title: '% of group'}});
   const newHigh = N.newBins[2] + N.newBins[3] + N.newBins[4];
-  $('#i-new').innerHTML = `All new sites met expectations, and <b>${pc(newHigh, N.n)}</b> scored 500 or higher. New sites averaged <b>${Math.round(N.avgNew)}</b> points; returning sites rose from ${Math.round(N.returningPrev)} to <b>${Math.round(N.avgReturning)}</b>.`;
+  $('#i-new').innerHTML = `<b>${pc(newHigh, N.n)}</b> of new sites scored 500 or higher. New sites averaged <b>${Math.round(N.avgNew)}</b> points; returning sites rose from ${Math.round(N.returningPrev)} to <b>${Math.round(N.avgReturning)}</b>.`;
   $('#t-new').innerHTML = kpis([[N.n, 'new sites observed'], ...TYPES.map(t => [N.byType[t], 'new ' + TLABEL[t].toLowerCase()])]).replace(/class="kpi"/g, 'class="kpi" style="margin-bottom:10px"') + `<p class="note">Returning sites: ${N.nReturning}.</p>`;
 
   // --- honor roll

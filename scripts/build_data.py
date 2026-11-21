@@ -27,7 +27,9 @@ years = {
 }
 
 def aggregate(df):
+    cutb = pd.cut(df.tp, [0, 399, 499, 599, 699, 800], labels=['399 or less', '400-499', '500-599', '600-699', '700-800'])
     out = dict(n=int(df.rating.notna().sum()), ratings={r: int((df.rating == r).sum()) for r in RATINGS},
+               bins=[int((cutb == b).sum()) for b in cutb.cat.categories],
                avg=round(float(df.tp.mean()), 1) if len(df) else None, byType={})
     for t in TYPES:
         d = df[df.type == t]
