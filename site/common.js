@@ -115,7 +115,10 @@ function update() {
   refreshOptions();
   FILTERED = ALL.filter(s => match(s));
   try { sessionStorage.setItem('vqb5f', JSON.stringify(state)); } catch (e) {}
-  $('#count').textContent = `Showing ${FILTERED.length.toLocaleString()} of ${ALL.length.toLocaleString()} sites`;
+  // Filters are tucked away by default, so say plainly when the data has been narrowed.
+  const active = FILTERS.filter(f => state[f[0]]).map(f => `${f[1]}: ${state[f[0]]}`).concat(state.q ? [`Search: “${state.q}”`] : []);
+  $('#count').innerHTML = `Showing ${FILTERED.length.toLocaleString()} of ${ALL.length.toLocaleString()} sites` + (active.length ? ` <span class="note" style="font-weight:600">· narrowed by ${active.map(esc).join('; ')}</span> <a href="#" id="clear-f">Clear</a>` : '');
+  const cf = $('#clear-f'); if (cf) cf.onclick = ev => { ev.preventDefault(); $('#reset').click(); };
   const sn = $('#smalln');
   if (sn) { sn.style.display = FILTERED.length < 20 ? '' : 'none'; sn.textContent = FILTERED.length ? `Small selection: only ${FILTERED.length} ${FILTERED.length === 1 ? 'site matches' : 'sites match'}. Averages and percentages for so few sites can swing widely; read them as examples, not as the typical result.` : 'No sites match these filters.'; }
   onChange();
@@ -212,7 +215,7 @@ async function init(page, cb, opts = {}) {
     onChange(); return;
   }
   buildFilters();
-  $('#ftoggle').addEventListener('click', e => { const o = $('#filters').classList.toggle('open'); e.target.textContent = o ? 'Hide filters' : 'Show filters'; e.target.setAttribute('aria-expanded', o); });
+  $('#ftoggle').addEventListener('click', e => { const o = $('#filters').classList.toggle('open'); e.target.textContent = o ? 'Hide filters' : 'Narrow down (optional)'; e.target.setAttribute('aria-expanded', o); });
   DATA = await loadJSON('sites');
   ALL = DATA.sites;
   update();
@@ -221,9 +224,8 @@ async function init(page, cb, opts = {}) {
 const NAV = `<div class="stripe"></div><header><div class="wrap">
 <div class="brand"><img src="img/ff-logo.png" alt="Foundation First – Building Early Childhood Success"><h1>Ready Region North Central - VQB5 Quality Ratings Explorer<small>2025-26 program year</small></h1>
 <div class="logos"><img class="rr" src="img/rrnc-logo.png" alt="Ready Region North Central" style="height:52px"></div></div>
-<nav><a data-p="summary" href="index.html">Summary</a><a data-p="compare" href="compare.html">Compare levels</a><a data-p="class" href="class.html">CLASS observations</a><a data-p="overview" href="ratings.html">Explore ratings</a>
-<a data-p="trends" href="trends.html">Trends</a><a data-p="programs" href="programs.html">Curriculum &amp; funding</a><a data-p="about" href="about.html">About &amp; definitions</a></nav></div></header>
-<div id="filters"><div class="wrap"><div class="bar"><b>Filter these charts</b><span id="count"></span><button id="ftoggle" type="button" aria-expanded="false">Show filters</button></div><div class="grid-f"></div><div id="smalln" class="smalln" role="status" style="display:none"></div></div></div>`;
+<nav><a data-p="summary" href="index.html">Home</a><a data-p="explore" href="explore.html">Explore</a><a data-p="compare" href="compare.html">Compare</a><a data-p="class" href="class.html">CLASS observations</a><a data-p="about" href="about.html">About &amp; definitions</a></nav></div></header>
+<div id="filters"><div class="wrap"><div class="bar"><span id="count"></span><button id="ftoggle" type="button" aria-expanded="false">Narrow down (optional)</button></div><div class="grid-f"></div><div id="smalln" class="smalln" role="status" style="display:none"></div></div></div>`;
 const FOOT = `<footer class="wrap"><p><b>Sources:</b> <a href="https://earlychildhoodquality.doe.virginia.gov/quality-ratings/">Virginia Department of Education VQB5 Quality Rating Data</a> (2023-24 to 2025-26); RRNC CLASS and coaching summaries (spring 2026); VDOE external CLASS averages (as of June 2026). Statewide figures are aggregates shown for comparison. <span id="asof"></span></p>
 <p>This is an independent visualization; VDOE's published data is the official record. <a href="about.html">About &amp; definitions</a></p></footer>`;
 document.head.insertAdjacentHTML('beforeend', '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap">');

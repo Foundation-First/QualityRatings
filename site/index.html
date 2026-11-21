@@ -1,120 +1,45 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Summary · RRNC Quality Ratings Dashboard</title><link rel="stylesheet" href="style.css">
-<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
+<title>Home · RRNC Quality Ratings Dashboard</title><link rel="stylesheet" href="style.css">
+</head>
 <body>
 <div class="hero" id="hero"><div class="wrap"></div></div>
 <main class="wrap">
 <div class="kpis" id="kpis"></div>
 
-<section><h2>Where sites land</h2><p class="lead" id="lead-scale"></p>
-<div class="grid">
- <div class="card"><h3>Quality ratings by site type</h3><div class="tbl" id="t-type-level"></div><div class="insight" id="i-type"></div></div>
- <div class="card"><h3>Sites by rating level and site type</h3><div id="c-bins" class="chart"></div><div class="insight" id="i-bins"></div></div>
-</div></section>
-
-<section><h2>How the region has changed over time</h2><p class="lead">RRNC compared with all VQB5-participating sites in Virginia over the first three program years.</p>
-<div class="grid">
- <div class="card"><h3>Average total points</h3><p>RRNC average vs. statewide average.</p><div id="c-avg" class="chart short"></div><div class="insight" id="i-avg"></div></div>
- <div class="card"><h3>Average points by site type</h3><p>RRNC and Virginia, by program year.</p><div class="tbl" id="t-type"></div></div>
- <div class="card"><h3>Quality ratings over time</h3><p>Number and percent of RRNC sites at each rating level (all sites rated that year).</p><div class="tbl" id="t-levels"></div></div>
- <div class="card" style="grid-column:1/-1"><h3>Sites at each rating level, by year</h3><p>Each bar is a rating level and each ribbon follows sites from one year to the next. This visual shows the sites who participated in VQB5 during the 2025-26 year; sites that started participating later start in the grey “Not yet rated” bar.</p><div id="c-levels" class="chart" style="height:430px"></div><div class="insight" id="i-sankey"></div></div>
-</div></section>
-
-<section><h2>New and returning sites</h2><p class="lead">RRNC provides case management to help new sites get started with VQB5. This section describes where new sites scored in their first year participating.</p>
-<div class="grid">
- <div class="card"><h3>Where new and returning sites land</h3><p>Share of each group at each rating level.</p><div id="c-new" class="chart short"></div><div class="insight" id="i-new"></div></div>
- <div class="card"><h3>New sites in 2025-26</h3><p>Sites with no 2024-25 score (first observed this year).</p><div id="t-new"></div></div>
-</div></section>
-
-<section><h2>Honor Rolls</h2><p class="lead">Excellence Honor Roll = total score of 700 or higher (Exceeds Expectations). Improvement Honor Roll = top 10% for interaction-point gains among returning sites. Infant &amp; Toddler Honor Roll = top 10% for infant/toddler interaction scores. A site can receive more than one Honor Roll each year.</p>
-<div class="card"><div class="tbl" id="t-honor"></div></div></section>
-
-<p class="note">Percentages may not sum to 100 due to rounding. Regional counts are computed from VDOE's published site-level data and match VDOE and regional summaries.</p>
+<section><h2>What would you like to know?</h2>
+<p class="lead">Pick a question to see the answer, then change what is shown, split it a different way, or narrow it down to your own locality or program type. Nothing here is hard-wired, so explore whatever is useful to you.</p>
+<div class="qgrid">
+ <a class="qcard" href="explore.html#preset=overall"><b>How did RRNC sites do this year?</b><span>Ratings and average scores for every site in the region.</span></a>
+ <a class="qcard" href="explore.html#preset=type"><b>How do centers, public schools and home-based programs compare?</b><span>Ratings by site type, with Virginia alongside.</span></a>
+ <a class="qcard" href="explore.html#preset=trends"><b>How have ratings changed over time?</b><span>The same sites followed from 2023-24 to 2025-26.</span></a>
+ <a class="qcard" href="compare.html"><b>How does my district or program compare?</b><span>Compare a locality, school district or single site with RRNC and Virginia.</span></a>
+ <a class="qcard" href="class.html"><b>What does classroom quality look like?</b><span>CLASS observation results, fall to spring and compared with Virginia.</span></a>
+ <a class="qcard" href="explore.html#preset=honor"><b>Who is on the Honor Roll?</b><span>Honor Roll sites by site type.</span></a>
+</div>
+<p class="note" style="margin-top:14px">New to terms like VQB5, CLASS or “points”? See <a href="about.html">About &amp; definitions</a> for plain-language explanations.</p>
+</section>
 </main>
 <script src="common.js"></script>
 <script>
-const YRS = ['2023-24', '2024-25', '2025-26'];
-
 function draw() {
-  const S = SUMMARY, nc = S.years, st = S.statewide, cur = nc['2025-26'], hn = S.honor['2025-26'], hs = S.honorStatewide['2025-26'];
-  const B = S.bins, curL = levelsFromBins(cur.bins), n = cur.n, last = LEVELS.length - 1;
-  const honorTotal = hn._unique, diff = Math.round(cur.avg - st['2025-26'].avg);
-  const big = curL.indexOf(Math.max(...curL));
-
-  $('#lead-scale').textContent = `VQB5 combines classroom interaction scores (CLASS) and curriculum use into a total score from 100 to 800. Each site earns a rating level: ` +
-    DESC.map(i => `${LEVELS[i].name} (${LEVELS[i].pts.replace('-', '–')} points)`).join(', ') + '.';
-
+  const S = SUMMARY, cur = S.years['2025-26'], st = S.statewide['2025-26'], n = cur.n, curL = levelsFromBins(cur.bins), last = LEVELS.length - 1;
+  const diff = Math.round(cur.avg - st.avg), honorTotal = S.honor['2025-26']._unique;
   if (scaleKey === 'three') {
     const meets = curL[1] + curL[2];
     $('#hero .wrap').innerHTML = `<h2>${meets} of ${n} sites (${(100 * meets / n).toFixed(1)}%) in Ready Region North Central met or exceeded expectations in the 2025-26 program year.</h2>
-      <p>The Ready Region North Central (RRNC) average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st['2025-26'].avg)}. </p>`;
+      <p>The Ready Region North Central (RRNC) average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st.avg)}.</p>`;
   } else {
-    const top2 = curL[last] + curL[last - 1];
+    const top2 = curL[last] + curL[last - 1], big = curL.indexOf(Math.max(...curL));
     $('#hero .wrap').innerHTML = `<h2>${pc(top2, n)} of RRNC sites score 600 or higher</h2>
-      <p>The Ready Region North Central (RRNC) average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st['2025-26'].avg)}. The largest group (${curL[big]} sites) is at the ${LEVELS[big].name} level.</p>`;
+      <p>The Ready Region North Central (RRNC) average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st.avg)}. The largest group (${curL[big]} sites) is at the ${LEVELS[big].name} level.</p>`;
   }
   $('#kpis').innerHTML = kpis([
     [fmt(n), 'sites rated in 2025-26'],
-    [`${Math.round(cur.avg)}`, `average total points (state ${Math.round(st['2025-26'].avg)})`],
+    [`${Math.round(cur.avg)}`, `average total points (state ${Math.round(st.avg)})`],
     ...DESC.map(i => [fmt(curL[i]), `${LEVELS[i].name} (${pc(curL[i], n)})`, LEVELS[i].color]),
     [fmt(honorTotal), `sites on an Honor Roll (${pc(honorTotal, n)})`],
   ]);
-
-  // --- ratings by site type
-  const typeL = Object.fromEntries(TYPES.map(t => [t, levelsFromBins(B.byType[t])]));
-  $('#t-type-level').innerHTML = table(['Site type', 'Sites', ...DESC.map(lvHead), 'Avg<br>points'],
-    [...TYPES.map(t => [TSHORT[t], sum(typeL[t]), ...DESC.map(i => np(typeL[t][i], sum(typeL[t]))), Math.round(cur.byType[t].avg)]),
-     ['<b>All sites</b>', `<b>${n}</b>`, ...DESC.map(i => `<b>${np(curL[i], n)}</b>`), `<b>${Math.round(cur.avg)}</b>`]]);
-  const best = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg);
-  const av = t => Math.round(cur.byType[t].avg), gapO = Math.abs(cur.byType[best[1]].avg - cur.byType[best[2]].avg);
-  $('#i-type').innerHTML = `<b>${TLABEL[best[0]]}</b> average ${av(best[0])} points. ` + (gapO < 10 ? `${TLABEL[best[1]]} (${av(best[1])}) and ${TLABEL[best[2]].toLowerCase()} (${av(best[2])}) are within ${Math.max(1, Math.round(gapO))} points of each other.` : `${TLABEL[best[1]]} average ${av(best[1])} and ${TLABEL[best[2]].toLowerCase()} ${av(best[2])}.`);
-
-  // --- sites by level and type
-  plot('c-bins', TYPES.map(t => ({name: TLABEL[t], type: 'bar', x: LEVELS.map(l => l.short), y: typeL[t], marker: {color: TCOLOR[t]}, hovertemplate: `%{x}<br>${TLABEL[t]}: %{y} sites<extra></extra>`})),
-    {barmode: 'stack', xaxis: {title: 'Rating level'}, yaxis: {title: 'Sites'}, annotations: LEVELS.map((l, i) => ({x: l.short, y: curL[i], text: `<b>${curL[i]}</b>`, showarrow: false, yshift: 12}))});
-  $('#i-bins').innerHTML = `<b>${curL[big]} sites (${pc(curL[big], n)})</b> are at the ${LEVELS[big].name} level, the largest group.` + (scaleKey === 'three' ? ` ${curL[2]} sites are at Exceeds Expectations and ${curL[0]} at Needs Support.` : '');
-
-  // --- over time
-  const line = (name, d, col) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y: YRS.map(y => d[y].avg), text: YRS.map(y => Math.round(d[y].avg)), textposition: 'top center', line: {color: col, width: 3}, marker: {size: 8}, hovertemplate: `%{x}: %{y:.0f} pts<extra>${name}</extra>`});
-  const c3 = ALL.filter(s => s.hist['2024-25']?.tp != null && s.hist['2023-24']?.tp != null);
-  const same = {'2023-24': mean(c3.map(s => s.hist['2023-24'].tp)), '2024-25': mean(c3.map(s => s.hist['2024-25'].tp)), '2025-26': mean(c3.map(s => s.tp))};
-  const sameLine = {name: `RRNC, same ${c3.length} sites each year`, type: 'scatter', mode: 'lines+markers', x: YRS, y: YRS.map(y => same[y]), line: {color: P.greenDD, width: 2, dash: 'dash'}, marker: {size: 6}, hovertemplate: '%{x}: %{y:.1f} pts<extra>Same sites</extra>'};
-  // label positions chosen so the three lines' numbers never sit on top of each other
-  const lRR = line('RRNC, all sites', nc, P.rrnc), lVA = line('Virginia, all sites', st, P.grey);
-  lRR.textposition = ['bottom center', 'top center', 'bottom center']; lVA.textposition = 'bottom center';
-  sameLine.mode = 'lines+markers+text'; sameLine.text = YRS.map(y => Math.round(same[y])); sameLine.textposition = 'top center';
-  plot('c-avg', [lRR, sameLine, lVA], {yaxis: {title: 'Average total points', range: [575, 610]}, legend: {orientation: 'h', y: -0.28}});
-  const gaps = YRS.map(y => Math.round(nc[y].avg - st[y].avg));
-  $('#i-avg').innerHTML = `The RRNC all-site average moved ${YRS.map(y => Math.round(nc[y].avg)).join(' → ')} from the first to the most recent year of VQB5. Among the <b>${c3.length} sites who have participated in VQB5 since the first year</b> (dashed line) it rose steadily, ${YRS.map(y => same[y].toFixed(1)).join(' → ')}, so the 2024-25 dip reflects which sites were in the data, not a decline at the same sites. RRNC has averaged ${gaps.map(g => Math.abs(g)).join(', ')} points ${gaps.every(g => g > 0) ? 'above' : 'from'} Virginia in these years.`;
-  const g = x => `<span style="color:var(--mute)">${Math.round(x)}</span>`;
-  $('#t-type').innerHTML = table(['Site type', ...YRS.map(y => y.slice(2)), ...YRS.map(y => y.slice(2))],
-    [...TYPES.map(t => [TSHORT[t], ...YRS.map(y => Math.round(nc[y].byType[t].avg)), ...YRS.map(y => g(st[y].byType[t].avg))]),
-     ['<b>All sites</b>', ...YRS.map(y => `<b>${Math.round(nc[y].avg)}</b>`), ...YRS.map(y => g(st[y].avg))]], 1, [['', 1], ['RRNC', 3], ['Virginia', 3]]);
-
-  const yb = YRS.map(y => nc[y].bins), yn = yb.map(sum), yl = yb.map(levelsFromBins);
-  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2))],
-    [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => np(yl[k][i], yn[k]))]),
-     ['<b>Total</b>', ...yn.map(v => `<b>${fmt(v)}</b>`)]]);
-
-  sankeyLevels('c-levels', ALL);
-  const mv = sankeyLevels.lastMoved;
-  $('#i-sankey').innerHTML = `Between consecutive years, <b>${pc(mv.total - mv.changed, mv.total)}</b> of sites stayed at the same level and <b>${pc(mv.changed, mv.total)}</b> changed level. With so many sites at one level, the Exceeds Expectations and Needs Support ribbons are thin; their counts are in the labels and in the table above.`;
-
-  // --- new vs returning
-  const N = S.newSites, nl = levelsFromBins(N.newBins), retL = LEVELS.map((_, i) => curL[i] - nl[i]);
-  const sh = (a, nn) => a.map(v => 100 * v / nn);
-  plot('c-new', [{name: `New sites (${N.n})`, type: 'bar', x: LEVELS.map(l => l.short), y: sh(nl, N.n), marker: {color: P.greenDD}, customdata: nl, text: sh(nl, N.n).map(v => v >= 1 ? Math.round(v) + '%' : ''), textposition: 'outside', cliponaxis: false, hovertemplate: '%{x}: %{customdata} new sites (%{y:.0f}%)<extra></extra>'},
-                 {name: `Returning sites (${N.nReturning})`, type: 'bar', x: LEVELS.map(l => l.short), y: sh(retL, N.nReturning), marker: {color: P.greenL}, customdata: retL, text: sh(retL, N.nReturning).map(v => v >= 1 ? Math.round(v) + '%' : ''), textposition: 'outside', cliponaxis: false, hovertemplate: '%{x}: %{customdata} returning sites (%{y:.0f}%)<extra></extra>'}],
-    {barmode: 'group', xaxis: {title: 'Rating level'}, yaxis: {title: '% of group', range: [0, 115]}});
-  $('#i-new').innerHTML = `New sites by level: ` + DESC.map(i => `<b>${nl[i]}</b> ${LEVELS[i].name}`).join(', ') + `. New sites averaged <b>${Math.round(N.avgNew)}</b> points, ${Math.round(N.avgReturning - N.avgNew)} below returning sites (<b>${Math.round(N.avgReturning)}</b>).`;
-  $('#t-new').innerHTML = kpis([[N.n, 'new sites observed'], ...TYPES.map(t => [N.byType[t], 'new ' + TLABEL[t].toLowerCase()])]).replace(/class="kpi"/g, 'class="kpi" style="margin-bottom:10px"') + `<p class="note">Returning sites: ${N.nReturning}.</p>`;
-
-  // --- honor roll
-  const cats = Object.keys(hn).filter(k => k !== '_unique');
-  $('#t-honor').innerHTML = table(['Honor Roll category', 'Centers', 'Home-based', 'Public schools', 'RRNC total', 'Virginia total'],
-    [...cats.map(k => { const r = hn[k]; return [k, r.Center, r['Family Day Home'], k.includes('Infant') ? 'N/A' : r['Public School'], `<b>${sum(TYPES.map(x => r[x]))}</b>`, sum(TYPES.map(x => hs[k][x]))]; }),
-     ['<b>Sites on any Honor Roll</b>', '', '', '', `<b>${honorTotal} (${pc(honorTotal, n)} of sites)</b>`, `${hs._unique} (${pc(hs._unique, st['2025-26'].n)})`]]);
 }
-init('summary', draw, {filters: false, summary: true, sites: true});
+init('summary', draw, {filters: false, summary: true});
 </script></body></html>
