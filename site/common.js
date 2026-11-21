@@ -20,7 +20,7 @@ async function loadJSON(name) { return (await fetch('data/' + name + '.json')).j
 
 let state = {};
 try { state = JSON.parse(sessionStorage.getItem('vqb5f') || '{}'); } catch (e) {}
-let DATA, SUMMARY, CLASS, ALL, FILTERED = [], onChange = () => {};
+let DATA, SUMMARY, CLASS, BENCH, ALL, FILTERED = [], onChange = () => {};
 
 const FILTERS = [
   ['county', 'Locality', s => [s.county]],
@@ -92,7 +92,12 @@ async function init(page, cb, opts = {}) {
   document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.dataset.p === page));
   if (opts.summary) SUMMARY = await loadJSON('summary');
   if (opts.class) CLASS = await loadJSON('class');
-  if (opts.filters === false) { $('#filters').remove(); cb(); return; }
+  if (opts.bench) BENCH = await loadJSON('benchmarks');
+  if (opts.filters === false) {
+    $('#filters').remove();
+    if (opts.sites) { DATA = await loadJSON('sites'); ALL = DATA.sites; }
+    cb(); return;
+  }
   buildFilters();
   DATA = await loadJSON('sites');
   ALL = DATA.sites;
@@ -102,7 +107,7 @@ async function init(page, cb, opts = {}) {
 const NAV = `<div class="stripe"></div><header><div class="wrap">
 <div class="brand"><img src="img/ff-logo.png" alt="Foundation First – Building Early Childhood Success"><h1>VQB5 Quality Ratings Dashboard<small>Ready Region North Central · 2025-26 program year</small></h1>
 <div class="logos"><img class="rr" src="img/rrnc-logo.png" alt="Ready Region North Central" style="height:52px"></div></div>
-<nav><a data-p="summary" href="index.html">Summary</a><a data-p="class" href="class.html">CLASS observations</a><a data-p="overview" href="ratings.html">Explore ratings</a>
+<nav><a data-p="summary" href="index.html">Summary</a><a data-p="compare" href="compare.html">Compare levels</a><a data-p="class" href="class.html">CLASS observations</a><a data-p="overview" href="ratings.html">Explore ratings</a>
 <a data-p="trends" href="trends.html">Trends</a><a data-p="programs" href="programs.html">Curriculum &amp; funding</a><a data-p="sites" href="sites.html">Find a site</a></nav></div></header>
 <div id="filters"><div class="wrap"><div class="bar"><b>Filter these charts</b><span id="count"></span></div><div class="grid-f"></div></div></div>`;
 const FOOT = `<footer class="wrap">Source: <a href="https://earlychildhoodquality.doe.virginia.gov/quality-ratings/">Virginia Department of Education VQB5 Quality Rating Data</a> (2023-24 to 2025-26) and Ready Region North Central CLASS and coaching summaries. Statewide figures are aggregates shown for comparison. This is an independent visualization; VDOE's published data is the official record.</footer>`;

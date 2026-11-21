@@ -51,6 +51,7 @@ for y in ('2024-25', '2025-26'):
     summary['honorStatewide'][y] = honor(years[y])
 
 # ---- site-level records: North Central only ----
+a_all = a.copy()
 a = a[a['RegionName'] == REGION]
 
 # ---- extra North Central breakdowns for the Summary page ----
@@ -67,6 +68,18 @@ summary['newSites'] = dict(
 using = ~a.CurriculumUse.fillna('').str.contains('did not report')
 summary['curriculumUse'] = {t: dict(using=int(((a.SiteType == t) & using).sum()), total=int((a.SiteType == t).sum())) for t in TYPES}
 json.dump(summary, open('site/data/summary.json', 'w'), separators=(',', ':'))
+
+# ---- statewide benchmark aggregates for the Compare page (no site identifiers) ----
+HSTART, HSTEP = 340, 5
+def bench(df):
+    hist = [0] * 90
+    for v in df.TotalPts.dropna():
+        hist[min(89, max(0, int((v - HSTART) // HSTEP)))] += 1
+    cutb = pd.cut(df.TotalPts, [0, 399, 499, 599, 699, 800], labels=BINS)
+    return dict(n=int(len(df)), tp=round(float(df.TotalPts.mean()), 1), ip=round(float(df.InteractionPts.mean()), 1), cp=round(float(df.CurriculumPts.mean()), 1),
+                ratings={r: int((df.QualityRating == r).sum()) for r in RATINGS}, bins=[int((cutb == b).sum()) for b in BINS],
+                start=HSTART, step=HSTEP, hist=hist)
+json.dump(dict(state={'all': bench(a_all), **{t: bench(a_all[a_all.SiteType == t]) for t in TYPES}}), open('site/data/benchmarks.json', 'w'), separators=(',', ':'))
 
 def num(v): return None if pd.isna(v) else int(v)
 def txt(v): return None if pd.isna(v) else str(v).strip()

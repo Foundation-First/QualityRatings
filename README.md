@@ -3,7 +3,7 @@
 Filterable charts built from the Virginia Department of Education's public
 [VQB5 Quality Rating Data](https://earlychildhoodquality.doe.virginia.gov/quality-ratings/).
 
-- `site/` – the static website (publish this folder). Pages: Summary, CLASS observations, Explore ratings, Trends, Curriculum & funding, Find a site.
+- `site/` – the static website (publish this folder). Pages: Summary, Compare levels (site → district → region → state), CLASS observations, Explore ratings, Trends, Curriculum & funding, Find a site.
   Only Ready Region 8 site records are published; statewide data appears only as aggregates (`summary.json`) for comparison.
 - `scripts/class_data.py` – CLASS/coaching figures transcribed from the regional handouts and VDOE's external CLASS report (not in the workbooks). Edit and re-run when new handouts come out.
 - `scripts/build_data.py` – cleans `raw/*.xlsx` into `site/data/sites.json`.
