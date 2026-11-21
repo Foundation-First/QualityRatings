@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Summary · RRNC VQB5 Dashboard</title><link rel="stylesheet" href="style.css">
+<title>Summary · RRNC Quality Ratings Dashboard</title><link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
 <body>
 <div class="hero" id="hero"><div class="wrap"></div></div>
@@ -9,11 +9,11 @@
 
 <section><h2>Where sites land</h2><p class="lead" id="lead-scale"></p>
 <div class="grid">
- <div class="card"><h3>Quality ratings by site type</h3><p>Number of sites at each rating level; Head Start grantees are included in public schools and centers.</p><div class="tbl" id="t-type-level"></div><div class="insight" id="i-type"></div></div>
+ <div class="card"><h3>Quality ratings by site type</h3><p>Number of sites at each rating level.</p><div class="tbl" id="t-type-level"></div><div class="insight" id="i-type"></div></div>
  <div class="card"><h3>Sites by rating level and site type</h3><p>Number of sites at each level.</p><div id="c-bins" class="chart"></div><div class="insight" id="i-bins"></div></div>
 </div></section>
 
-<section><h2>How the region compares and has changed</h2><p class="lead">RRNC compared with all Virginia VQB5 sites over the first three program years.</p>
+<section><h2>How the region has changed over time</h2><p class="lead">RRNC compared with all VQB5-participating sites in Virginia over the first three program years.</p>
 <div class="grid">
  <div class="card"><h3>Average total points</h3><p>RRNC average vs. statewide average.</p><div id="c-avg" class="chart short"></div><div class="insight" id="i-avg"></div></div>
  <div class="card"><h3>Average points by site type</h3><p>RRNC and Virginia, by program year.</p><div class="tbl" id="t-type"></div></div>
@@ -27,10 +27,10 @@
  <div class="card"><h3>New sites in 2025-26</h3><p>Sites with no 2024-25 score (first observed this year).</p><div id="t-new"></div></div>
 </div></section>
 
-<section><h2>Honor Rolls</h2><p class="lead">Excellence = total score of 700 or higher (Exceeds Expectations). Top Improvement = top 10% for interaction-point gains among returning sites. Top Infant &amp; Toddler = top 10% for infant/toddler interaction scores. A site can appear on more than one list.</p>
+<section><h2>Honor Rolls</h2><p class="lead">Excellence = total score of 700 or higher (Exceeds Expectations). Top Improvement = top 10% for interaction-point gains among returning sites. Top Infant &amp; Toddler = top 10% for infant/toddler interaction scores. A site can receive more than one Honor Roll each year.</p>
 <div class="card"><div class="tbl" id="t-honor"></div></div></section>
 
-<p class="note">Percentages may not sum to 100 due to rounding. Regional counts are computed from VDOE's published site-level data and match VDOE and regional summaries. Number of children served is published only in VDOE's statewide PDF and is not included here.</p>
+<p class="note">Percentages may not sum to 100 due to rounding. Regional counts are computed from VDOE's published site-level data and match VDOE and regional summaries.</p>
 </main>
 <script src="common.js"></script>
 <script>
@@ -114,7 +114,7 @@ function draw() {
   const cats = Object.keys(hn).filter(k => k !== '_unique');
   $('#t-honor').innerHTML = table(['Honor Roll category', 'Centers', 'Home-based', 'Public schools', 'RRNC total', 'Virginia total'],
     [...cats.map(k => { const r = hn[k]; return [k, r.Center, r['Family Day Home'], k.includes('Infant') ? 'N/A' : r['Public School'], `<b>${sum(TYPES.map(x => r[x]))}</b>`, sum(TYPES.map(x => hs[k][x]))]; }),
-     ['<b>Unique sites on any Honor Roll</b>', '', '', '', `<b>${honorTotal} (${pc(honorTotal, n)} of sites)</b>`, `${hs._unique} (${pc(hs._unique, st['2025-26'].n)})`]]);
+     ['<b>Sites on any Honor Roll</b>', '', '', '', `<b>${honorTotal} (${pc(honorTotal, n)} of sites)</b>`, `${hs._unique} (${pc(hs._unique, st['2025-26'].n)})`]]);
 }
 init('summary', draw, {filters: false, summary: true, sites: true});
 </script></body></html>

@@ -46,7 +46,7 @@ const np = (v, t) => `${fmt(v)} (${pc(v, t)})`;
 const TYPES = ['Center', 'Public School', 'Family Day Home'];
 const TLABEL = {Center: 'Child care centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based child care'};
 const TSHORT = {Center: 'Centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based'};   // compact labels for tables
-// A locality's school division. Counties are "<County> Public Schools"; these independent cities use their official division names (verify against VDOE if more localities are added).
+// A locality's school division. Counties are "<County> Public Schools"; these independent cities use their official division names.
 const DIST_OVERRIDE = {'Manassas': 'Manassas City Public Schools', 'Manassas Park': 'Manassas Park City Schools', 'Fredericksburg': 'Fredericksburg City Public Schools'};
 const distName = n => DIST_OVERRIDE[n] || `${n} Public Schools`;
 const TCOLOR = {Center: P.tan, 'Public School': P.slate, 'Family Day Home': P.brown};

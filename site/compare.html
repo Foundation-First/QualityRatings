@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Compare levels · RRNC VQB5 Dashboard</title><link rel="stylesheet" href="style.css">
+<title>Compare levels · RRNC Quality Ratings Dashboard</title><link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 <style>
 .pickers{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;align-items:end}
@@ -12,7 +12,7 @@
 <body>
 <main class="wrap">
 <section><h2>Compare levels</h2>
-<p class="lead">See how a locality, a school district or a single site compares with the Ready Region and with Virginia. Choose a <b>locality</b> (all programs there) or a <b>school district</b> (its public schools), then optionally one site. By default the broader levels include every kind of program, so a school district is compared with the whole community. Turn on the toggle to compare only with the same site type.</p>
+<p class="lead">See how a locality, a school district or a single site compares with the Ready Region and with Virginia. Choose a <b>locality</b> (all programs there) or a <b>school district</b> (its public schools), then optionally one site. By default the broader levels include every kind of program; turn on the toggle to compare only with the same site type.</p>
 <div class="card"><div class="pickers">
  <label>Locality or school district<select id="p-place"></select></label>
  <label>Site (optional)<select id="p-site"></select></label>
@@ -39,7 +39,7 @@
 <script>
 // Entity colours: dark ink = the site, greens = RRNC data (darker = more specific), grey = Virginia. Line styles differ too, so colour is never the only cue.
 const LV = {site: {color: P.ink, text: P.ink, short: 'Site', dash: 'solid', w: 4}, dist: {color: P.greenDD, text: P.greenDD, short: 'School district', dash: 'solid', w: 3},
-  loc: {color: P.greenL, text: '#5E8A1A', short: 'Locality', dash: 'dashdot', w: 3}, region: {color: P.rrnc, text: '#4F8A12', short: 'Region', dash: 'dash', w: 3}, state: {color: P.grey, text: '#666', short: 'Virginia', dash: 'dot', w: 3}};
+  loc: {color: P.greenL, text: '#5E8A1A', short: 'Locality', dash: 'dashdot', w: 3}, region: {color: P.rrnc, text: '#4F8A12', short: 'RR North Central', dash: 'dash', w: 3}, state: {color: P.grey, text: '#666', short: 'Virginia', dash: 'dot', w: 3}};
 const ord = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
 const ordP = p => p == null ? '–' : ord(p);
 const f0 = v => v == null ? '–' : Math.round(v).toLocaleString();
@@ -202,7 +202,7 @@ function draw() {
   const rankRows = Object.entries(by).map(([k, v]) => ({name: k, label: isDist ? distName(k) : k, v: mean(v.map(s => s.tp)), n: v.length}));
   const regAvg = stats(ALL.filter(typeOK(rankType))).tp, stAvg = stateStats(rankType).tp;
   $('#h-rank').textContent = isDist ? 'How school districts compare' : 'How localities compare';
-  $('#l-rank').textContent = (isDist ? 'Average total points for public-school sites in each school division (pre-K and birth-to-five programs only). ' : `Average total points by locality for ${rankType ? TLABEL[rankType].toLowerCase() : 'sites of all types'}. `) + 'Paler dots have fewer than 5 sites and are too few to read as the group’s overall result.';
+  $('#l-rank').textContent = (isDist ? 'Average total points for public-school sites in each school division (pre-K and birth-to-five programs only). ' : `Average total points by locality for ${rankType ? TLABEL[rankType].toLowerCase() : 'sites of all types'}. `) + 'Paler dots have fewer than 5 sites.';
   dotRank('c-rank', rankRows, [{x: regAvg, label: 'Region', color: P.rrnc, text: '#4F8A12'}, {x: stAvg, label: 'Virginia', color: P.grey, dash: 'dot', text: '#666'}], name);
 }
 
