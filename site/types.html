@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Program types · RRNC Quality Ratings Dashboard</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
+<body><main class="wrap">
+<section><h2>How do program types compare?</h2></section>
+<div class="answer" id="answer"></div>
+<div class="grid">
+ <div class="card"><h3>Average score by program type</h3><div id="c-avg" class="chart short"></div></div>
+ <div class="card"><h3>Ratings by program type</h3><div class="tbl" id="t-levels"></div></div>
+</div>
+<section id="honor" style="margin-top:26px"><h2>Who is on the Honor Roll?</h2>
+<div class="answer" id="answer2"></div>
+<div class="card"><div class="tbl" id="t-honor"></div></div></section>
+</main>
+<script src="common.js"></script>
+<script>
+function draw() {
+  const S = SUMMARY, cur = S.years['2025-26'], st = S.statewide['2025-26'], n = cur.n;
+  const order = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg), av = t => Math.round(cur.byType[t].avg);
+  const gap = Math.abs(cur.byType[order[1]].avg - cur.byType[order[2]].avg);
+  $('#answer').innerHTML = `<b>${TLABEL[order[0]]}</b> average <b>${av(order[0])}</b> points. ` + (gap < 10 ? `${TLABEL[order[1]]} (<b>${av(order[1])}</b>) and ${TLABEL[order[2]].toLowerCase()} (<b>${av(order[2])}</b>) are too close to call a difference.` : `${TLABEL[order[1]]} average <b>${av(order[1])}</b> and ${TLABEL[order[2]].toLowerCase()} <b>${av(order[2])}</b>.`);
+  const rows = [...order].reverse();   // plotly lists bottom-up, so the highest ends on top
+  plot('c-avg', [
+    {name: 'RRNC', type: 'scatter', mode: 'markers+text', x: rows.map(t => cur.byType[t].avg), y: rows.map(t => TLABEL[t]), text: rows.map(t => av(t)), textposition: 'top center', marker: {size: 15, color: P.rrnc, line: {width: 1.5, color: '#fff'}}, hovertemplate: '%{y}: %{x:.0f}<extra>RRNC</extra>'},
+    {name: 'Virginia', type: 'scatter', mode: 'markers', x: rows.map(t => st.byType[t].avg), y: rows.map(t => TLABEL[t]), marker: {symbol: 'diamond', size: 13, color: P.grey, line: {width: 1.5, color: '#fff'}}, hovertemplate: '%{y}: %{x:.0f}<extra>Virginia</extra>'}],
+    {xaxis: {title: 'Average points', range: [540, 660]}, yaxis: {automargin: true}, legend: {orientation: 'h', y: -0.35}, margin: {t: 10, r: 20, b: 80, l: 170}});
+  const B = S.bins.byType, tl = Object.fromEntries(TYPES.map(t => [t, levelsFromBins(B[t])]));
+  $('#t-levels').innerHTML = table(['Program type', ...DESC.map(lvHead)], [...order.map(t => [TSHORT[t], ...DESC.map(i => np(tl[t][i], sum(tl[t])))]), ['<b>All sites</b>', ...DESC.map(i => `<b>${np(levelsFromBins(cur.bins)[i], n)}</b>`)]]);
+  const hn = S.honor['2025-26'], names = ['Excellence Honor Roll', 'Improvement Honor Roll', 'Infant & Toddler Honor Roll'], keys = Object.keys(hn).filter(k => k !== '_unique');
+  $('#answer2').innerHTML = `<b>${hn._unique}</b> sites (${pc(hn._unique, n)}) are on at least one Honor Roll.`;
+  $('#t-honor').innerHTML = table(['Honor Roll', 'Centers', 'Home-based', 'Public schools', 'Total'], keys.map((k, j) => { const r = hn[k]; return [names[j], r.Center, r['Family Day Home'], k.includes('Infant') ? 'N/A' : r['Public School'], `<b>${sum(TYPES.map(x => r[x]))}</b>`]; }));
+}
+init('types', draw, {filters: false, summary: true});
+</script></body></html>

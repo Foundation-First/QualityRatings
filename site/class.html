@@ -7,41 +7,36 @@
 <main class="wrap">
 <div class="kpis" id="kpis"></div>
 
-<section><h2>What CLASS measures</h2><p class="lead">The Classroom Assessment Scoring System (CLASS) rates teacher-child interactions on a 1–7 scale. Every birth-to-five classroom in VQB5 is observed twice a year.</p>
-</section>
-<div class="viewseg" id="tabs" role="group" aria-label="Which observations" style="margin-bottom:6px"></div>
-
-<div id="tab-local"><section><h2>Local CLASS observations: fall to spring</h2><p class="lead">Results from the observations completed by Ready Region North Central observers.</p>
+<section><h2>Classroom scores</h2><p class="lead">CLASS rates teacher-child interactions from 1 to 7. Every birth-to-five classroom is observed twice a year.</p>
 <div class="grid">
- <div class="card"><h3>Average CLASS score, fall vs. spring</h3><p>Average total CLASS score by age level.</p><div id="c-fs" class="chart short"></div><div class="insight" id="i-fs"></div></div>
- <div class="card"><h3>Where classrooms scored in spring 2026</h3><p>Share of classrooms in each score range.</p><div id="c-spring" class="chart short"></div><div class="insight" id="i-spring"></div></div>
- <div class="card"><h3>Observations completed</h3><p>Number of local observations by age level and season.</p><div class="tbl" id="t-counts"></div></div>
- <div class="card"><h3>Score ranges</h3><p>Lowest to highest classroom total score.</p><div class="tbl" id="t-range"></div></div>
-</div></section></div>
+ <div class="card"><h3>Average CLASS score, fall and spring</h3><div id="c-fs" class="chart short"></div><div class="insight" id="i-fs"></div></div>
+ <div class="card"><h3>RRNC and Virginia (outside observers)</h3><div id="c-total" class="chart short"></div><p class="small" id="p-total" style="margin:6px 0 0"></p></div>
+</div></section>
 
-<div id="tab-ext" style="display:none"><section><h2>External CLASS observations: RRNC vs. Virginia</h2><p class="lead">Averages from third-party observers (as of June 2026). These use a different observer pool and a sample of classrooms, so they are best compared with the statewide figure, not with local scores.</p>
-<div class="row seg" id="age-seg" role="group" aria-label="Age level"></div>
-<div class="grid">
- <div class="card"><h3>Total CLASS average by age level</h3><p id="p-total"></p><div id="c-total" class="chart short"></div></div>
- <div class="card"><h3>Average by dimension</h3><p>Each bar is one CLASS dimension; longer is better. Negative Climate is scored the other way (lower is better) and is shown in the note below.</p><div id="c-dims" class="chart tall"></div><div class="insight" id="i-dims"></div></div>
- <div class="card"><h3>Average by site type</h3><p id="p-site"></p><div id="c-site" class="chart short"></div></div>
- <div class="card" id="card-domains"><h3>Average by domain</h3><p>CLASS groups dimensions into broader domains.</p><div id="c-domains" class="chart short"></div></div>
-</div>
-<p class="note" id="n-neg"></p></section></div>
-
-<section><h2>Coaching and professional development</h2><p class="lead">Observation results guide where the region directs support. Classrooms with a score 3.99 and below are prioritized for coaching.</p>
+<section><h2>Coaching</h2><p class="lead">Classrooms with a score 3.99 and below are prioritized for coaching.</p>
 <div class="kpis plain-kpis" id="kpis2" style="margin-top:0"></div></section>
 
-<section><h2>Approved curriculum in classrooms</h2><p class="lead">Classrooms using a VDOE-approved curriculum as of June 3, 2026. Site-level curriculum use is on the Explore page.</p>
-<div class="card"><div id="c-cr" class="chart short"></div><div class="insight" id="i-cr"></div></div></section>
+<details class="more" id="more"><summary>See more detail</summary>
+<section><div class="grid">
+ <div class="card"><h3>Where classrooms scored this spring</h3><div id="c-spring" class="chart short"></div><div class="insight" id="i-spring"></div></div>
+ <div class="card"><h3>Observations completed</h3><div class="tbl" id="t-counts"></div></div>
+ <div class="card"><h3>Lowest and highest classroom scores</h3><div class="tbl" id="t-range"></div></div>
+ <div class="card"><h3>Classrooms using an approved curriculum</h3><div id="c-cr" class="chart short"></div><div class="insight" id="i-cr"></div></div>
+</div></section>
+<section><h2>RRNC and Virginia in more detail</h2>
+<div class="row seg" id="age-seg" role="group" aria-label="Age level"></div>
+<div class="grid">
+ <div class="card"><h3>Average by dimension</h3><p>Longer is better.</p><div id="c-dims" class="chart tall"></div><div class="insight" id="i-dims"></div></div>
+ <div class="card"><h3>Average by program type</h3><p id="p-site"></p><div id="c-site" class="chart short"></div></div>
+ <div class="card" id="card-domains"><h3>Average by domain</h3><div id="c-domains" class="chart short"></div></div>
+</div>
+<p class="note" id="n-neg"></p></section>
+</details>
 </main>
 <script src="common.js"></script>
 <script>
 const AGES = ['Infant', 'Toddler', 'Pre-K'];
-let age = 'Pre-K', tab = 'local';
-const tabs = $('#tabs');
-tabs.innerHTML = [['local', 'Local observations (fall and spring)'], ['ext', 'External observations (compared with Virginia)']].map(([v, l]) => `<button type="button" data-t="${v}" class="${v === tab ? 'on' : ''}">${l}</button>`).join('');
-tabs.addEventListener('click', e => { const t = e.target.dataset.t; if (!t) return; tab = t; tabs.querySelectorAll('button').forEach(b => { b.classList.toggle('on', b.dataset.t === t); b.setAttribute('aria-pressed', b.dataset.t === t); }); $('#tab-local').style.display = t === 'local' ? '' : 'none'; $('#tab-ext').style.display = t === 'ext' ? '' : 'none'; draw(); labelCharts(); });
+let age = 'Pre-K';
 const seg = $('#age-seg');
 seg.innerHTML = AGES.map(a => `<button data-a="${a}" class="${a === age ? 'on' : ''}">${a} CLASS</button>`).join('');
 seg.addEventListener('click', e => { if (!e.target.dataset.a) return; age = e.target.dataset.a; seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.target)); drawExternal(); });
@@ -90,7 +85,7 @@ function draw() {
 
 function drawTotals() {
   const X = CLASS.external;
-  $('#p-total').textContent = 'External observations, all age levels. Classrooms observed (RRNC / Virginia): ' + AGES.map(a => `${a} ${fmt(X[a].n.nc)} / ${fmt(X[a].n.state)}`).join(', ') + '.';
+  $('#p-total').textContent = 'Classrooms observed (RRNC / Virginia): ' + AGES.map(a => `${a} ${fmt(X[a].n.nc)} / ${fmt(X[a].n.state)}`).join(', ') + '. As of June 2026.';
   plot('c-total', [{name: 'RRNC', type: 'bar', x: AGES, y: AGES.map(a => X[a].total.nc), text: AGES.map(a => f2(X[a].total.nc)), textposition: 'outside', cliponaxis: false, marker: {color: P.rrnc}, hovertemplate: '%{x}: %{y:.2f}<extra>RRNC</extra>'},
     {name: 'Virginia', type: 'bar', x: AGES, y: AGES.map(a => X[a].total.state), text: AGES.map(a => f2(X[a].total.state)), textposition: 'outside', cliponaxis: false, marker: {color: P.grey}, hovertemplate: '%{x}: %{y:.2f}<extra>Virginia</extra>'}],
     {barmode: 'group', yaxis: {title: 'Average total CLASS score (1–7)', range: [0, 7]}});
@@ -113,5 +108,6 @@ function drawExternal() {
   if (E.domains) grp('c-domains', E.domains.map(x => x[0]), E.domains.map(x => x[1]), E.domains.map(x => x[2]), 'Average score (1–7)', null, {t: 10, r: 20, b: 70, l: 210});
   $('#n-neg').textContent = E.negClimate ? `Negative Climate (lower is better): RRNC ${f2(E.negClimate.nc)}, Virginia ${f2(E.negClimate.state)}.` : 'The infant tool has four dimensions and no Negative Climate dimension.';
 }
+$('#more').addEventListener('toggle', () => { if ($('#more').open) { draw(); labelCharts(); } });
 init('class', draw, {filters: false, class: true});
 </script></body></html>

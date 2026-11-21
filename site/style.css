@@ -102,3 +102,12 @@ a.qcard b{display:block;font-size:17px;color:var(--navy);margin-bottom:4px}a.qca
 .controls>div:last-child{grid-column:1/-1}
 
 @media(max-width:640px){.xmain{display:flex;flex-direction:column}.xmain .kpis{order:3;margin-top:14px}}
+
+/* answer-first pages: one plain sentence, then the picture */
+.answer{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--rrnc);border-radius:12px;padding:16px 20px;margin:0 0 16px;font-size:20px;line-height:1.45;color:var(--navy)}
+.answer b{color:var(--ink)}
+.pick{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 16px;max-width:640px}
+.pick select{font-size:17px;padding:10px 12px;width:100%}
+.pick label{font-size:15px;color:var(--navy)}
+.more{margin-top:16px}.more summary{cursor:pointer;font-weight:800;color:var(--navy);padding:10px 0}
+.small{font-size:14px;color:var(--mute);margin:4px 0 14px}

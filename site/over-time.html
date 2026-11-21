@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Over time · RRNC Quality Ratings Dashboard</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
+<body><main class="wrap">
+<section><h2>Is quality improving?</h2>
+<div class="viewseg" id="types" role="group" aria-label="Program type" style="margin-bottom:14px"></div></section>
+<div class="answer" id="answer"></div>
+<div class="card"><h3>Average score, same sites each year</h3><div id="c-line" class="chart short"></div>
+<p class="small" style="margin-bottom:0">A change of a few points is normal and is not a meaningful difference.</p></div>
+<div class="card" style="margin-top:14px"><h3>Ratings each year</h3><div class="tbl" id="t-levels"></div></div>
+</main>
+<script src="common.js"></script>
+<script>
+const YRS = ['2023-24', '2024-25', '2025-26'];
+const OPTS = [['', 'All programs'], ['Center', 'Centers'], ['Public School', 'Public schools'], ['Family Day Home', 'Home-based']];
+let type = '';
+const box = $('#types');
+box.innerHTML = OPTS.map(([v, l]) => `<button type="button" data-t="${v}">${l}</button>`).join('');
+box.onclick = e => { if (e.target.dataset.t === undefined) return; type = e.target.dataset.t; draw(); };
+
+function draw() {
+  if (!ALL || !SUMMARY) return;
+  box.querySelectorAll('button').forEach(b => { const on = b.dataset.t === type; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  const list = ALL.filter(s => !type || s.type === type);
+  const c = list.filter(s => YRS.every(y => (y === '2025-26' ? s.tp : s.hist[y]?.tp) != null));
+  const tps = YRS.map(y => c.map(s => y === '2025-26' ? s.tp : s.hist[y].tp));
+  const avg = tps.map(a => mean(a)), va = YRS.map(y => type ? SUMMARY.statewide[y].byType[type].avg : SUMMARY.statewide[y].avg);
+  // "went up/down" only when the change is bigger than normal site-to-site variation (2 standard errors of the per-site change)
+  const dl = c.map(s => s.tp - s.hist['2023-24'].tp), md = mean(dl), sd = Math.sqrt(sum(dl.map(x => (x - md) ** 2)) / Math.max(1, dl.length - 1)), se = sd / Math.sqrt(Math.max(1, dl.length));
+  const verb = Math.abs(md) < 2 * se ? 'stayed about the same' : md > 0 ? 'went up' : 'went down';
+  const who = {'': 'sites', Center: 'centers', 'Public School': 'public-school sites', 'Family Day Home': 'home-based programs'}[type];
+  $('#answer').innerHTML = c.length ? `The <b>${c.length}</b> ${who} that took part in all three years ${verb}: average score <b>${avg.map(Math.round).join(' → ')}</b> from 2023-24 to 2025-26.` : 'No sites in this group took part in all three years.';
+  plot('c-line', [
+    {name: 'RRNC (same sites each year)', type: 'scatter', mode: 'lines+markers+text', x: YRS, y: avg, text: avg.map(v => Math.round(v)), textposition: 'top center', line: {color: P.rrnc, width: 3}, marker: {size: 9}, hovertemplate: '%{x}: %{y:.0f}<extra>RRNC</extra>'},
+    {name: 'Virginia (all sites)', type: 'scatter', mode: 'lines+markers+text', x: YRS, y: va, text: va.map(v => Math.round(v)), textposition: 'bottom center', line: {color: P.grey, width: 3}, marker: {size: 9}, hovertemplate: '%{x}: %{y:.0f}<extra>Virginia</extra>'}],
+    {yaxis: {title: 'Average points'}, legend: {orientation: 'h', y: -0.3}});
+  const lv = tps.map(a => levelsFromBins(bandCounts(a.map(tp => ({tp})))));
+  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2))], [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => np(lv[k][i], c.length))]), ['<b>Sites</b>', ...YRS.map(() => `<b>${c.length}</b>`)]]);
+}
+init('time', draw, {filters: false, sites: true, summary: true});
+</script></body></html>
