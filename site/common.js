@@ -38,7 +38,9 @@ const lvShort = i => LEVELS[i].short;
 const TYPES = ['Center', 'Public School', 'Family Day Home'];
 const TLABEL = {Center: 'Child care centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based child care'};
 const TSHORT = {Center: 'Centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based'};   // compact labels for tables
-const distName = n => `${n} Public Schools`;   // a locality's school district, e.g. "Prince William County Public Schools"
+// A locality's school division. Counties are "<County> Public Schools"; these independent cities use their official division names (verify against VDOE if more localities are added).
+const DIST_OVERRIDE = {'Manassas': 'Manassas City Public Schools', 'Manassas Park': 'Manassas Park City Schools', 'Fredericksburg': 'Fredericksburg City Public Schools'};
+const distName = n => DIST_OVERRIDE[n] || `${n} Public Schools`;
 const TCOLOR = {Center: P.blue, 'Public School': '#6B7F91', 'Family Day Home': P.green};
 const AGE_COLOR = {Infant: P.green, Toddler: P.orange, 'Pre-K': P.blue};
 const css = n => ({'--accent': P.blue, '--meets': P.lightBlue, '--grid': P.grid, '--ink': P.ink, '--exceeds': P.greenD, '--needs': P.orange, '--mute': '#5b6b78'}[n]);
@@ -182,7 +184,7 @@ async function init(page, cb, opts = {}) {
 }
 
 const NAV = `<div class="stripe"></div><header><div class="wrap">
-<div class="brand"><img src="img/ff-logo.png" alt="Foundation First – Building Early Childhood Success"><h1>VQB5 Quality Ratings Dashboard<small>Ready Region North Central · 2025-26 program year</small></h1>
+<div class="brand"><img src="img/ff-logo.png" alt="Foundation First – Building Early Childhood Success"><h1>VQB5 Quality Ratings Dashboard<small>Ready Region North Central (RRNC) · 2025-26 program year</small></h1>
 <div class="logos"><img class="rr" src="img/rrnc-logo.png" alt="Ready Region North Central" style="height:52px"></div></div>
 <nav><a data-p="summary" href="index.html">Summary</a><a data-p="compare" href="compare.html">Compare levels</a><a data-p="class" href="class.html">CLASS observations</a><a data-p="overview" href="ratings.html">Explore ratings</a>
 <a data-p="trends" href="trends.html">Trends</a><a data-p="programs" href="programs.html">Curriculum &amp; funding</a></nav></div></header>

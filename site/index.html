@@ -21,7 +21,7 @@
  <div class="card" style="grid-column:1/-1"><h3>Sites at each rating level, by year</h3><p>Each bar is a rating level and each ribbon follows sites from one year to the next. Shows the sites rated in 2025-26, so earlier-year counts can be lower than in the table above (sites that have since left VQB5 are not in the data). Sites that joined later start in the grey “Not yet rated” bar.</p><div id="c-levels" class="chart" style="height:430px"></div></div>
 </div></section>
 
-<section><h2>New and returning sites</h2><p class="lead">The region's case-management approach helps new sites onboard to VQB5.</p>
+<section><h2>New and returning sites</h2><p class="lead">RRNC provides case management to help new sites get started with VQB5. This section describes where new sites scored; it does not measure the effect of that support.</p>
 <div class="grid">
  <div class="card"><h3>Where new and returning sites land</h3><p>Share of each group at each rating level.</p><div id="c-new" class="chart short"></div><div class="insight" id="i-new"></div></div>
  <div class="card"><h3>New sites in 2025-26</h3><p>Sites with no 2024-25 score (first observed this year).</p><div id="t-new"></div></div>
@@ -67,7 +67,8 @@ function draw() {
     [...TYPES.map(t => [TSHORT[t], sum(typeL[t]), ...DESC.map(i => typeL[t][i]), Math.round(cur.byType[t].avg)]),
      ['<b>All sites</b>', `<b>${n}</b>`, ...DESC.map(i => `<b>${curL[i]}</b>`), `<b>${Math.round(cur.avg)}</b>`]]);
   const best = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg);
-  $('#i-type').innerHTML = `<b>${TLABEL[best[0]]}</b> have the highest average (${Math.round(cur.byType[best[0]].avg)} points); <b>${TLABEL[best[2]].toLowerCase()}</b> the lowest (${Math.round(cur.byType[best[2]].avg)}).`;
+  const av = t => Math.round(cur.byType[t].avg), gapO = Math.abs(cur.byType[best[1]].avg - cur.byType[best[2]].avg);
+  $('#i-type').innerHTML = `<b>${TLABEL[best[0]]}</b> average ${av(best[0])} points. ` + (gapO < 10 ? `${TLABEL[best[1]]} (${av(best[1])}) and ${TLABEL[best[2]].toLowerCase()} (${av(best[2])}) are within ${Math.max(1, Math.round(gapO))} points of each other, too close to call a difference.` : `${TLABEL[best[1]]} average ${av(best[1])} and ${TLABEL[best[2]].toLowerCase()} ${av(best[2])}.`) + ` Site types are scored the same way but serve different children and settings, so compare them with care.`;
 
   // --- sites by level and type
   plot('c-bins', TYPES.map(t => ({name: TLABEL[t], type: 'bar', x: LEVELS.map(l => l.short), y: typeL[t], marker: {color: TCOLOR[t]}, hovertemplate: `%{x}<br>${TLABEL[t]}: %{y} sites<extra></extra>`})),
@@ -76,8 +77,13 @@ function draw() {
 
   // --- over time
   const line = (name, d, col) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y: YRS.map(y => d[y].avg), text: YRS.map(y => Math.round(d[y].avg)), textposition: 'top center', line: {color: col, width: 3}, marker: {size: 8}, hovertemplate: `%{x}: %{y:.0f} pts<extra>${name}</extra>`});
-  plot('c-avg', [line('RRNC', nc, P.blue), line('Virginia', st, P.grey)], {yaxis: {title: 'Average total points', range: [575, 610]}});
-  $('#i-avg').innerHTML = `The RRNC average dipped in 2024-25, then rose <b>${Math.round(nc['2025-26'].avg - nc['2024-25'].avg)} points</b> to ${Math.round(nc['2025-26'].avg)} in 2025-26, keeping the region above the state each year.`;
+  const c3 = ALL.filter(s => s.hist['2024-25']?.tp != null && s.hist['2023-24']?.tp != null);
+  const same = {'2023-24': mean(c3.map(s => s.hist['2023-24'].tp)), '2024-25': mean(c3.map(s => s.hist['2024-25'].tp)), '2025-26': mean(c3.map(s => s.tp))};
+  const sameLine = {name: `RRNC, same ${c3.length} sites each year`, type: 'scatter', mode: 'lines+markers', x: YRS, y: YRS.map(y => same[y]), line: {color: P.blue, width: 2, dash: 'dash'}, marker: {size: 6}, hovertemplate: '%{x}: %{y:.1f} pts<extra>Same sites</extra>'};
+  const lRR = line('RRNC, all sites', nc, P.blue), lVA = line('Virginia, all sites', st, P.grey); lVA.textposition = 'bottom center';
+  plot('c-avg', [lRR, sameLine, lVA], {yaxis: {title: 'Average total points', range: [575, 610]}, annotations: [{text: 'Vertical axis starts at 575, not 0', x: 0, xref: 'paper', y: -0.42, yref: 'paper', showarrow: false, xanchor: 'left', font: {size: 11, color: '#5b6b78'}}], legend: {orientation: 'h', y: -0.28}});
+  const gaps = YRS.map(y => Math.round(nc[y].avg - st[y].avg));
+  $('#i-avg').innerHTML = `The RRNC all-site average moved ${YRS.map(y => Math.round(nc[y].avg)).join(' → ')} as sites joined and left VQB5. Among the <b>${c3.length} sites scored in all three years</b> (dashed line) it rose steadily, ${YRS.map(y => same[y].toFixed(1)).join(' → ')}, so the 2024-25 dip reflects which sites were in the data, not a decline at the same sites. RRNC has averaged ${gaps.map(g => Math.abs(g)).join(', ')} points ${gaps.every(g => g > 0) ? 'above' : 'from'} Virginia in these years, a small gap on an 800-point scale.`;
   const g = x => `<span style="color:var(--mute)">${Math.round(x)}</span>`;
   $('#t-type').innerHTML = table(['Site type', ...YRS.map(y => y.slice(2)), ...YRS.map(y => y.slice(2))],
     [...TYPES.map(t => [TSHORT[t], ...YRS.map(y => Math.round(nc[y].byType[t].avg)), ...YRS.map(y => g(st[y].byType[t].avg))]),
@@ -96,7 +102,7 @@ function draw() {
   plot('c-new', [{name: `New sites (${N.n})`, type: 'bar', x: LEVELS.map(l => l.short), y: sh(nl, N.n), marker: {color: P.orange}, customdata: nl, text: sh(nl, N.n).map(v => v >= 1 ? Math.round(v) + '%' : ''), textposition: 'outside', cliponaxis: false, hovertemplate: '%{x}: %{customdata} new sites (%{y:.0f}%)<extra></extra>'},
                  {name: `Returning sites (${N.nReturning})`, type: 'bar', x: LEVELS.map(l => l.short), y: sh(retL, N.nReturning), marker: {color: P.blue}, customdata: retL, text: sh(retL, N.nReturning).map(v => v >= 1 ? Math.round(v) + '%' : ''), textposition: 'outside', cliponaxis: false, hovertemplate: '%{x}: %{customdata} returning sites (%{y:.0f}%)<extra></extra>'}],
     {barmode: 'group', xaxis: {title: 'Rating level'}, yaxis: {title: '% of group', range: [0, 115]}});
-  $('#i-new').innerHTML = `New sites by level: ` + DESC.map(i => `<b>${nl[i]}</b> ${LEVELS[i].name}`).join(', ') + `. New sites averaged <b>${Math.round(N.avgNew)}</b> points; returning sites rose from ${Math.round(N.returningPrev)} to <b>${Math.round(N.avgReturning)}</b>.`;
+  $('#i-new').innerHTML = `New sites by level: ` + DESC.map(i => `<b>${nl[i]}</b> ${LEVELS[i].name}`).join(', ') + `. New sites averaged <b>${Math.round(N.avgNew)}</b> points, ${Math.round(N.avgReturning - N.avgNew)} below returning sites (<b>${Math.round(N.avgReturning)}</b>).`;
   $('#t-new').innerHTML = kpis([[N.n, 'new sites observed'], ...TYPES.map(t => [N.byType[t], 'new ' + TLABEL[t].toLowerCase()])]).replace(/class="kpi"/g, 'class="kpi" style="margin-bottom:10px"') + `<p class="note">Returning sites: ${N.nReturning}.</p>`;
 
   // --- honor roll

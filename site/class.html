@@ -46,8 +46,8 @@ const f2 = v => v.toFixed(2);
 function draw() {
   const L = CLASS.local, X = CLASS.external, sup = CLASS.support;
   const fall = sum(AGES.map(a => L.counts[a][0])), spr = sum(AGES.map(a => L.counts[a][1]));
-  $('#hero .wrap').innerHTML = `<h2>${fmt(fall + spr)} local CLASS observations show classroom quality edging up from fall to spring</h2>
-    <p>The average total CLASS score rose from <b>${f2(L.total_avg[0])}</b> in fall 2025 to <b>${f2(L.total_avg[1])}</b> in spring 2026, and <b>${pc(sum(AGES.map(a => L.spring[a][3])), spr)}</b> of classrooms scored in the 5.00–7.00 range this spring.</p>`;
+  $('#hero .wrap').innerHTML = `<h2>${fmt(fall + spr)} local CLASS observations: scores were steady from fall to spring</h2>
+    <p>The average total CLASS score was <b>${f2(L.total_avg[0])}</b> in fall 2025 and <b>${f2(L.total_avg[1])}</b> in spring 2026. <b>${pc(sum(AGES.map(a => L.spring[a][3])), spr)}</b> of classrooms scored in the 5.00–7.00 range this spring.</p>`;
   $('#kpis').innerHTML = kpis([
     [fmt(fall + spr), `local observations (${fmt(fall)} fall, ${fmt(spr)} spring)`],
     [f2(L.total_avg[1]), `spring average CLASS score (fall ${f2(L.total_avg[0])})`],
@@ -59,7 +59,8 @@ function draw() {
     marker: {color: i ? P.blue : P.lightBlue}, hovertemplate: `%{x} CLASS, ${s}: %{y:.2f}<extra></extra>`})), {barmode: 'group', yaxis: {title: 'Average total CLASS score', range: [0, 7]}});
   const d = AGES.map(a => L.avg[a][1] - L.avg[a][0]);
   const up = AGES.filter((a, i) => d[i] > 0), down = AGES.filter((a, i) => d[i] < 0);
-  $('#i-fs').innerHTML = `Scores rose from fall to spring for <b>${up.join(' and ')}</b> classrooms` + (down.length ? ` and dipped slightly for <b>${down.join(', ')}</b> (${f2(L.avg[down[0]][0])} → ${f2(L.avg[down[0]][1])}).` : '.');
+  const sg = x => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(2);
+  $('#i-fs').innerHTML = `Fall-to-spring changes were small: ` + AGES.map((a, i) => `<b>${sg(d[i])}</b> (${a})`).join(', ') + `. Fall and spring include different observation visits, so these are best read as steady, not as a trend.`;
 
   const lbl = L.springIntervals, cols = [P.orange, '#FBC77A', P.lightBlue, P.blue];
   plot('c-spring', lbl.map((iv, i) => ({name: iv, type: 'bar', orientation: 'h', y: AGES.map(a => a + ' (' + sum(L.spring[a]) + ')'), x: AGES.map(a => 100 * L.spring[a][i] / sum(L.spring[a])), marker: {color: cols[i]},
@@ -93,7 +94,8 @@ function drawExternal() {
   grp('c-dims', E.dims.map(x => x[0]), E.dims.map(x => x[1]), E.dims.map(x => x[2]), 'Average score (1–7)', null, {t: 10, r: 30, b: 70, l: 230});
   const lo = [...E.dims].sort((a, b) => a[1] - b[1]), hi = lo[lo.length - 1];
   const gaps = E.dims.map(x => [x[0], x[1] - x[2]]).sort((a, b) => a[1] - b[1]);
-  $('#i-dims').innerHTML = `Highest: <b>${hi[0]}</b> (${f2(hi[1])}). Lowest: <b>${lo[0][0]}</b> (${f2(lo[0][1])}), the main area for growth. Largest gap vs. state: <b>${gaps[0][0]}</b> (${gaps[0][1].toFixed(2)}).`;
+  const stLo = [...E.dims].sort((a, b) => a[2] - b[2])[0];
+  $('#i-dims').innerHTML = `Highest in RRNC: <b>${hi[0]}</b> (${f2(hi[1])}). Lowest in RRNC: <b>${lo[0][0]}</b> (${f2(lo[0][1])})` + (stLo[0] === lo[0][0] ? `, which is also the lowest statewide (${f2(lo[0][2])}), so this is a statewide pattern, not specific to RRNC.` : `; statewide the lowest is ${stLo[0]} (${f2(stLo[2])}).`) + ` Differences of about 0.1 from Virginia are small.`;
   const sites = Object.entries(E.site);
   $('#p-site').textContent = age === 'Infant' ? 'Infant averages are shown for centers only; other site types have too few observations to report.' : 'Site types with too few observations for a reliable average are omitted.';
   grp('c-site', sites.map(([t]) => TLABEL[t]), sites.map(([, v]) => v[0]), sites.map(([, v]) => v[1]), 'Average score (1–7)', null, {t: 10, r: 20, b: 70, l: 170});
