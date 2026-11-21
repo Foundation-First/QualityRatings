@@ -9,10 +9,9 @@ const fmt = n => n == null ? '–' : n.toLocaleString();
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 let state = {};
 try { state = JSON.parse(sessionStorage.getItem('vqb5f') || '{}'); } catch (e) {}
-let DATA, ALL, FILTERED = [], onChange = () => {};
+let DATA, SUMMARY, ALL, FILTERED = [], onChange = () => {};
 
 const FILTERS = [
-  ['region', 'Ready Region', s => [s.region]],
   ['county', 'Locality', s => [s.county]],
   ['type', 'Site type', s => [s.type]],
   ['rating', 'Quality rating', s => [s.rating]],
@@ -75,9 +74,16 @@ function plot(id, traces, layout = {}) {
   Plotly.react(id, traces, lay, {displayModeBar: false, responsive: true});
 }
 
-async function init(page, cb) {
+async function init(page, cb, opts = {}) {
   onChange = cb;
   document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.dataset.p === page));
+  if (opts.filters === false) {            // summary page: fixed region-wide view, no filter bar
+    $('#filters').remove(); $('#count').textContent = '';
+    SUMMARY = await (await fetch('data/summary.json')).json();
+    cb();
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', cb);
+    return;
+  }
   buildFilters();
   DATA = await (await fetch('data/sites.json')).json();
   ALL = DATA.sites;
@@ -85,11 +91,11 @@ async function init(page, cb) {
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', update);
 }
 
-const NAV = `<header><div class="wrap"><h1>Virginia VQB5 Quality Ratings Explorer</h1><nav>
-<a data-p="overview" href="index.html">Overview</a><a data-p="trends" href="trends.html">Trends</a>
+const NAV = `<header><div class="wrap"><h1>VQB5 Quality Ratings · Ready Region 8 North Central</h1><nav>
+<a data-p="summary" href="index.html">Summary</a><a data-p="overview" href="ratings.html">Ratings explorer</a><a data-p="trends" href="trends.html">Trends</a>
 <a data-p="programs" href="programs.html">Curriculum &amp; funding</a><a data-p="sites" href="sites.html">Site finder</a></nav>
 <span id="count" class="note"></span></div></header><div id="filters"><div class="wrap"></div></div>`;
 const FOOT = `<footer class="wrap">Data: <a href="https://earlychildhoodquality.doe.virginia.gov/quality-ratings/">Virginia Department of Education, VQB5 Quality Rating Data 2025-2026</a>
-(includes 2024-25 and 2023-24 results for continuing sites). This is an independent visualization, not affiliated with VDOE; check the VDOE site for official data.</footer>`;
+(includes 2024-25 and 2023-24 results for continuing sites). Shows Ready Region 8 – North Central; statewide figures are aggregates for comparison only. This is an independent visualization, not affiliated with VDOE; check the VDOE site for official data.</footer>`;
 document.body.insertAdjacentHTML('afterbegin', NAV);
 document.body.insertAdjacentHTML('beforeend', FOOT);

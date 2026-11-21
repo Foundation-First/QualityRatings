@@ -1,70 +1,56 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VQB5 Quality Ratings – Overview</title><link rel="stylesheet" href="style.css">
+<title>VQB5 Quality Ratings – North Central Summary</title><link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
 <body><main class="wrap">
+<p class="note">A summary of VQB5 Quality Ratings for Ready Region 8 – North Central, modeled on VDOE's statewide summary. Statewide figures are shown for comparison. Use the <a href="ratings.html" style="color:var(--accent)">Ratings explorer</a> to filter by locality, site type and more.</p>
 <div class="kpis" id="kpis"></div>
 <div class="grid">
- <div class="card"><h2>Ratings by Ready Region</h2><p>About 98% of sites Meet Expectations, so the default view zooms in on the sites at either end.</p>
-  <div class="row seg"><button data-m="out" class="on">Exceeds &amp; Needs Support (%)</button><button data-m="count">All ratings (count)</button><button data-m="pct">All ratings (%)</button></div><div id="c-region" class="chart"></div></div>
- <div class="card"><h2>Ratings by site type</h2><p>Centers, public schools and family day homes.</p>
-  <div class="row seg"><button data-m="out" class="on">Exceeds &amp; Needs Support (%)</button><button data-m="count">All ratings (count)</button><button data-m="pct">All ratings (%)</button></div><div id="c-type" class="chart"></div></div>
- <div class="card"><h2>Distribution of total points</h2><p>Interaction points (CLASS) plus curriculum points, one count per site.</p><div id="c-hist" class="chart"></div></div>
- <div class="card"><h2>Interaction points by site type</h2><p>Box = middle 50% of sites; line = median.</p><div id="c-box" class="chart"></div></div>
- <div class="card" style="grid-column:1/-1"><h2>Localities: sites and share rated Exceeds / Needs Support</h2><p>Top 25 localities by number of sites in the current selection.</p><div id="c-county" class="chart tall"></div></div>
-</div></main>
+ <div class="card"><h2>Overall quality ratings over time</h2><p>Number and percent of North Central sites by rating (all sites rated that year).</p><div class="tbl" id="t-ratings"></div></div>
+ <div class="card"><h2>Average rating points over time</h2><p>North Central compared with all Virginia VQB5 sites.</p><div id="c-avg" class="chart"></div></div>
+ <div class="card"><h2>Average rating points by site type</h2><p>Includes Head Start grantees in Public Schools and Centers, per VDOE's grouping of site types. State figures in grey.</p><div class="tbl" id="t-type"></div></div>
+ <div class="card"><h2>Sites at either end of the scale</h2><p>Count of North Central sites rated Exceeds Expectations or Needs Support each year.</p><div id="c-ends" class="chart"></div></div>
+ <div class="card" style="grid-column:1/-1"><h2>2025-26 Honor Rolls</h2><p>Excellence = Exceeds Expectations; Top Improvement = top 10% for interaction-point gains among returning sites; Top Infant &amp; Toddler = top 10% for infant/toddler interaction points. A site can be on more than one list.</p><div class="tbl" id="t-honor"></div></div>
+</div>
+<p class="note">Not included: number of children served, which VDOE reports in its summary PDF but not in the downloadable site data. Figures are computed from VDOE's published site-level workbooks; percentages may not sum to 100 due to rounding.</p>
+</main>
 <script src="common.js"></script>
 <script>
-const mode = {region: 'out', type: 'out'};
-document.querySelectorAll('.seg').forEach((g, i) => g.addEventListener('click', e => {
-  if (!e.target.dataset.m) return;
-  g.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.target));
-  mode[i ? 'type' : 'region'] = e.target.dataset.m; draw();
-}));
-
-function stacked(id, key, m, horizontal) {
-  const groups = [...new Set(FILTERED.map(s => s[key]))].sort();
-  const tot = Object.fromEntries(groups.map(g => [g, FILTERED.filter(s => s[key] === g).length]));
-  const traces = RATINGS.filter(r => m !== 'out' || !r.startsWith('Meets')).map(r => {
-    const vals = groups.map(g => FILTERED.filter(s => s[key] === g && s.rating === r).length);
-    const y = m !== 'count' ? vals.map((v, i) => tot[groups[i]] ? 100 * v / tot[groups[i]] : 0) : vals;
-    return {name: r, type: 'bar', x: horizontal ? y : groups, y: horizontal ? groups : y, orientation: horizontal ? 'h' : 'v',
-      marker: {color: rcolor(r)}, customdata: vals, hovertemplate: `%{${horizontal ? 'y' : 'x'}}<br>${r}: %{customdata} sites` + (m !== 'count' ? ' (%{' + (horizontal ? 'x' : 'y') + ':.1f}%)' : '') + '<extra></extra>'};
-  });
-  plot(id, traces, {barmode: m === 'out' ? 'group' : 'stack', yaxis: {title: m === 'count' ? 'Sites' : '% of sites'}, xaxis: {tickangle: -25}, margin: {t: 10, r: 10, b: 90, l: 55}});
-}
+const YRS = ['2023-24', '2024-25', '2025-26'], TYPES = ['Center', 'Public School', 'Family Day Home'];
+const TLABEL = {Center: 'Child care centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based child care'};
+const pc = (v, n) => { if (!n) return '–'; const p = 100 * v / n; return p > 0 && p < 1 ? '<1%' : Math.round(p) + '%'; };
+const table = (head, rows) => `<table><thead><tr>${head.map(h => `<th style="cursor:default">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+const R = ['Exceeds Expectations', 'Meets Expectations', 'Needs Support'];
 
 function draw() {
-  const F = FILTERED, n = F.length;
-  const c = r => F.filter(s => s.rating === r).length;
-  const tp = F.map(s => s.tp).filter(v => v != null);
-  const pct = v => n ? (100 * v / n).toFixed(1) + '%' : '–';
+  const S = SUMMARY, nc = S.years, st = S.statewide, cur = nc['2025-26'], hn = S.honor['2025-26'];
+  const hs = S.honorStatewide['2025-26'];
+  const honorTotal = hn._unique;
   $('#kpis').innerHTML = [
-    [fmt(n), 'sites in selection'], [pct(c('Exceeds Expectations')), `Exceeds Expectations (${fmt(c('Exceeds Expectations'))})`],
-    [pct(c('Meets Expectations')), `Meets Expectations (${fmt(c('Meets Expectations'))})`], [pct(c('Needs Support')), `Needs Support (${fmt(c('Needs Support'))})`],
-    [tp.length ? Math.round(mean(tp)) : '–', 'average total points'],
+    [fmt(cur.n), 'sites rated in 2025-26'],
+    [(100 * (cur.ratings['Exceeds Expectations'] + cur.ratings['Meets Expectations']) / cur.n).toFixed(1) + '%', 'Meets or Exceeds Expectations'],
+    [Math.round(cur.avg), `average rating points (state ${Math.round(st['2025-26'].avg)})`],
+    [fmt(honorTotal), `sites on an Honor Roll (${pc(honorTotal, cur.n)} of sites)`],
   ].map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${s}</span></div>`).join('');
 
-  stacked('c-region', 'region', mode.region);
-  stacked('c-type', 'type', mode.type);
+  $('#t-ratings').innerHTML = table(['Quality rating', ...YRS.map(y => '# ' + y), ...YRS.map(y => '% ' + y)],
+    [...R.map(r => [r, ...YRS.map(y => fmt(nc[y].ratings[r])), ...YRS.map(y => pc(nc[y].ratings[r], nc[y].n))]),
+     ['<b>Total</b>', ...YRS.map(y => `<b>${fmt(nc[y].n)}</b>`), ...YRS.map(() => '<b>100%</b>')]]);
 
-  plot('c-hist', [{type: 'histogram', x: tp, xbins: {size: 20}, marker: {color: css('--accent')}, hovertemplate: '%{x} pts: %{y} sites<extra></extra>'}],
-    {xaxis: {title: 'Total points'}, yaxis: {title: 'Sites'}, bargap: 0.05});
+  const line = (name, d, col) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y: YRS.map(y => d[y].avg), text: YRS.map(y => Math.round(d[y].avg)), textposition: 'top center', line: {color: col}, hovertemplate: `%{x}: %{y:.0f} pts<extra>${name}</extra>`});
+  plot('c-avg', [line('North Central', nc, css('--accent')), line('Virginia', st, css('--meets'))], {yaxis: {title: 'Average rating points', range: [570, 610]}});
 
-  plot('c-box', ['Center', 'Public School', 'Family Day Home'].map(t => ({
-    type: 'box', name: t, y: F.filter(s => s.type === t && s.ip != null).map(s => s.ip), boxpoints: false, marker: {color: css('--accent')}, line: {color: css('--accent')}})),
-    {yaxis: {title: 'Interaction points'}, showlegend: false});
+  $('#t-type').innerHTML = table(['Site type', ...YRS.map(y => y + ' NC'), ...YRS.map(y => `<span style="color:var(--mute)">${y} state</span>`)],
+    [...TYPES.map(t => [TLABEL[t], ...YRS.map(y => Math.round(nc[y].byType[t].avg)), ...YRS.map(y => `<span style="color:var(--mute)">${Math.round(st[y].byType[t].avg)}</span>`)]),
+     ['<b>All sites</b>', ...YRS.map(y => `<b>${Math.round(nc[y].avg)}</b>`), ...YRS.map(y => `<span style="color:var(--mute)">${Math.round(st[y].avg)}</span>`)]]);
 
-  const by = {};
-  for (const s of F) (by[s.county] ??= []).push(s);
-  const top = Object.entries(by).sort((a, b) => b[1].length - a[1].length).slice(0, 25).reverse();
-  const share = r => top.map(([, v]) => 100 * v.filter(s => s.rating === r).length / v.length);
-  plot('c-county', [
-    {name: 'Sites (count)', type: 'bar', orientation: 'h', y: top.map(t => t[0]), x: top.map(t => t[1].length), marker: {color: css('--meets')}, xaxis: 'x', hovertemplate: '%{y}: %{x} sites<extra></extra>'},
-    {name: '% Exceeds', type: 'bar', orientation: 'h', y: top.map(t => t[0]), x: share('Exceeds Expectations'), marker: {color: rcolor('Exceeds Expectations')}, xaxis: 'x2', hovertemplate: '%{y}: %{x:.1f}% Exceeds<extra></extra>'},
-    {name: '% Needs Support', type: 'bar', orientation: 'h', y: top.map(t => t[0]), x: share('Needs Support'), marker: {color: rcolor('Needs Support')}, xaxis: 'x2', hovertemplate: '%{y}: %{x:.1f}% Needs Support<extra></extra>'},
-  ], {grid: {rows: 1, columns: 2, pattern: 'independent'}, xaxis: {domain: [0, .45], title: 'Sites'}, xaxis2: {domain: [.55, 1], title: '% of locality sites', gridcolor: css('--grid')},
-      barmode: 'group', margin: {t: 10, r: 10, b: 70, l: 150}});
+  plot('c-ends', ['Exceeds Expectations', 'Needs Support'].map(r => ({name: r, type: 'bar', x: YRS, y: YRS.map(y => nc[y].ratings[r]), text: YRS.map(y => nc[y].ratings[r]), textposition: 'outside', marker: {color: rcolor(r)}, hovertemplate: `%{x}: %{y} sites<extra>${r}</extra>`})),
+    {barmode: 'group', yaxis: {title: 'Sites'}});
+
+  const cats = Object.keys(hn).filter(k => k !== '_unique');
+  $('#t-honor').innerHTML = table(['Honor Roll category', 'Child care centers', 'Home-based child care', 'Public schools', 'North Central total', 'Virginia total'],
+    [...cats.map(k => { const r = hn[k], t = sum(TYPES.map(x => r[x])), vt = sum(TYPES.map(x => hs[k][x])); return [k, r.Center, r['Family Day Home'], k.includes('Infant') ? 'N/A' : r['Public School'], t, vt]; }),
+     ['<b>Unique sites on any Honor Roll</b>', '', '', '', `<b>${honorTotal} (${pc(honorTotal, cur.n)} of sites)</b>`, `${hs._unique} (${pc(hs._unique, st['2025-26'].n)})`]]);
 }
-init('overview', draw);
+init('summary', draw, {filters: false});
 </script></body></html>

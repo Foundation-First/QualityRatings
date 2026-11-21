@@ -1,9 +1,10 @@
-# VQB5 Quality Ratings Explorer
+# VQB5 Quality Ratings Explorer – Ready Region 8 North Central
 
 Filterable charts built from the Virginia Department of Education's public
 [VQB5 Quality Rating Data](https://earlychildhoodquality.doe.virginia.gov/quality-ratings/).
 
-- `site/` – the static website (publish this folder). Pages: Overview, Trends, Curriculum & funding, Site finder.
+- `site/` – the static website (publish this folder). Pages: Summary, Ratings explorer, Trends, Curriculum & funding, Site finder.
+  Only Ready Region 8 site records are published; statewide data appears only as aggregates (`summary.json`) for comparison.
 - `scripts/build_data.py` – cleans `raw/*.xlsx` into `site/data/sites.json`.
 - `raw/` – downloaded VDOE workbooks (git-ignored; re-download from the VDOE page).
 

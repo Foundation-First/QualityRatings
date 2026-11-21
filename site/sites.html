@@ -7,7 +7,7 @@
 </div></main>
 <script src="common.js"></script>
 <script>
-const COLS = [['name', 'Site'], ['county', 'Locality'], ['region', 'Region'], ['type', 'Type'], ['rating', 'Rating'], ['tp', 'Total pts'], ['ip', 'Interaction pts'], ['cp', 'Curriculum pts'], ['rooms', 'Ages'], ['honor', 'Honor roll']];
+const COLS = [['name', 'Site'], ['county', 'Locality'], ['type', 'Type'], ['rating', 'Rating'], ['tp', 'Total pts'], ['ip', 'Interaction pts'], ['cp', 'Curriculum pts'], ['rooms', 'Ages'], ['honor', 'Honor roll']];
 const PAGE = 50; let page = 0, sortK = 'name', sortDir = 1;
 const val = (s, k) => Array.isArray(s[k]) ? s[k].join('; ') : s[k];
 $('#head').innerHTML = COLS.map(([k, l]) => `<th data-k="${k}">${l}</th>`).join('');
@@ -32,9 +32,9 @@ function draw() {
   $('#body').innerHTML = rows.slice(page * PAGE, (page + 1) * PAGE).map(s => {
     const cls = (s.rating || '').split(' ')[0];
     const nm = s.web ? `<a href="${/^https?:/.test(s.web) ? '' : 'https://'}${esc(s.web)}" target="_blank" rel="noopener">${esc(s.name)}</a>` : esc(s.name);
-    return `<tr><td>${nm}<br><span class="note">${esc(s.addr)}</span></td><td>${esc(s.county)}</td><td>${esc(s.region)}</td><td>${esc(s.type)}</td>
+    return `<tr><td>${nm}<br><span class="note">${esc(s.addr)}</span></td><td>${esc(s.county)}</td><td>${esc(s.type)}</td>
       <td><span class="pill ${cls}">${esc(s.rating)}</span></td><td>${fmt(s.tp)}</td><td>${fmt(s.ip)}</td><td>${fmt(s.cp)}</td><td>${esc(s.rooms.join(', '))}</td><td>${esc(s.honor.join(', '))}</td></tr>`;
-  }).join('') || '<tr><td colspan="10">No sites match these filters.</td></tr>';
+  }).join('') || '<tr><td colspan="9">No sites match these filters.</td></tr>';
 }
 init('sites', draw);
 </script></body></html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VQB5 Ratings Explorer – North Central</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
+<body><main class="wrap">
+<div class="kpis" id="kpis"></div>
+<div class="grid">
+ <div class="card"><h2>Ratings by age group served</h2><p>About 98% of sites Meet Expectations, so the default view zooms in on the sites at either end.</p>
+  <div class="row seg"><button data-m="out" class="on">Exceeds &amp; Needs Support (%)</button><button data-m="count">All ratings (count)</button><button data-m="pct">All ratings (%)</button></div><div id="c-ages" class="chart"></div></div>
+ <div class="card"><h2>Ratings by site type</h2><p>Centers, public schools and family day homes.</p>
+  <div class="row seg"><button data-m="out" class="on">Exceeds &amp; Needs Support (%)</button><button data-m="count">All ratings (count)</button><button data-m="pct">All ratings (%)</button></div><div id="c-type" class="chart"></div></div>
+ <div class="card"><h2>Distribution of total points</h2><p>Interaction points (CLASS) plus curriculum points, one count per site.</p><div id="c-hist" class="chart"></div></div>
+ <div class="card"><h2>Interaction points by site type</h2><p>Box = middle 50% of sites; line = median.</p><div id="c-box" class="chart"></div></div>
+ <div class="card" style="grid-column:1/-1"><h2>Localities: sites and share rated Exceeds / Needs Support</h2><p>Top 25 localities by number of sites in the current selection.</p><div id="c-county" class="chart tall"></div></div>
+</div></main>
+<script src="common.js"></script>
+<script>
+const mode = {region: 'out', type: 'out'};
+document.querySelectorAll('.seg').forEach((g, i) => g.addEventListener('click', e => {
+  if (!e.target.dataset.m) return;
+  g.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.target));
+  mode[i ? 'type' : 'region'] = e.target.dataset.m; draw();
+}));
+
+function stacked(id, key, m, horizontal) {
+  const groups = [...new Set(FILTERED.map(s => s[key]))].sort();
+  const tot = Object.fromEntries(groups.map(g => [g, FILTERED.filter(s => s[key] === g).length]));
+  const traces = RATINGS.filter(r => m !== 'out' || !r.startsWith('Meets')).map(r => {
+    const vals = groups.map(g => FILTERED.filter(s => s[key] === g && s.rating === r).length);
+    const y = m !== 'count' ? vals.map((v, i) => tot[groups[i]] ? 100 * v / tot[groups[i]] : 0) : vals;
+    return {name: r, type: 'bar', x: horizontal ? y : groups, y: horizontal ? groups : y, orientation: horizontal ? 'h' : 'v',
+      marker: {color: rcolor(r)}, customdata: vals, hovertemplate: `%{${horizontal ? 'y' : 'x'}}<br>${r}: %{customdata} sites` + (m !== 'count' ? ' (%{' + (horizontal ? 'x' : 'y') + ':.1f}%)' : '') + '<extra></extra>'};
+  });
+  plot(id, traces, {barmode: m === 'out' ? 'group' : 'stack', yaxis: {title: m === 'count' ? 'Sites' : '% of sites'}, xaxis: {tickangle: -25}, margin: {t: 10, r: 10, b: 90, l: 55}});
+}
+
+function draw() {
+  const F = FILTERED, n = F.length;
+  const c = r => F.filter(s => s.rating === r).length;
+  const tp = F.map(s => s.tp).filter(v => v != null);
+  const pct = v => n ? (100 * v / n).toFixed(1) + '%' : '–';
+  $('#kpis').innerHTML = [
+    [fmt(n), 'sites in selection'], [pct(c('Exceeds Expectations')), `Exceeds Expectations (${fmt(c('Exceeds Expectations'))})`],
+    [pct(c('Meets Expectations')), `Meets Expectations (${fmt(c('Meets Expectations'))})`], [pct(c('Needs Support')), `Needs Support (${fmt(c('Needs Support'))})`],
+    [tp.length ? Math.round(mean(tp)) : '–', 'average total points'],
+  ].map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${s}</span></div>`).join('');
+
+  stacked('c-ages', 'ages', mode.region);
+  stacked('c-type', 'type', mode.type);
+
+  plot('c-hist', [{type: 'histogram', x: tp, xbins: {size: 20}, marker: {color: css('--accent')}, hovertemplate: '%{x} pts: %{y} sites<extra></extra>'}],
+    {xaxis: {title: 'Total points'}, yaxis: {title: 'Sites'}, bargap: 0.05});
+
+  plot('c-box', ['Center', 'Public School', 'Family Day Home'].map(t => ({
+    type: 'box', name: t, y: F.filter(s => s.type === t && s.ip != null).map(s => s.ip), boxpoints: false, marker: {color: css('--accent')}, line: {color: css('--accent')}})),
+    {yaxis: {title: 'Interaction points'}, showlegend: false});
+
+  const by = {};
+  for (const s of F) (by[s.county] ??= []).push(s);
+  const top = Object.entries(by).sort((a, b) => b[1].length - a[1].length).slice(0, 25).reverse();
+  const share = r => top.map(([, v]) => 100 * v.filter(s => s.rating === r).length / v.length);
+  plot('c-county', [
+    {name: 'Sites (count)', type: 'bar', orientation: 'h', y: top.map(t => t[0]), x: top.map(t => t[1].length), marker: {color: css('--meets')}, xaxis: 'x', hovertemplate: '%{y}: %{x} sites<extra></extra>'},
+    {name: '% Exceeds', type: 'bar', orientation: 'h', y: top.map(t => t[0]), x: share('Exceeds Expectations'), marker: {color: rcolor('Exceeds Expectations')}, xaxis: 'x2', hovertemplate: '%{y}: %{x:.1f}% Exceeds<extra></extra>'},
+    {name: '% Needs Support', type: 'bar', orientation: 'h', y: top.map(t => t[0]), x: share('Needs Support'), marker: {color: rcolor('Needs Support')}, xaxis: 'x2', hovertemplate: '%{y}: %{x:.1f}% Needs Support<extra></extra>'},
+  ], {grid: {rows: 1, columns: 2, pattern: 'independent'}, xaxis: {domain: [0, .45], title: 'Sites'}, xaxis2: {domain: [.55, 1], title: '% of locality sites', gridcolor: css('--grid')},
+      barmode: 'group', margin: {t: 10, r: 10, b: 70, l: 150}});
+}
+init('overview', draw);
+</script></body></html>
