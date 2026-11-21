@@ -25,3 +25,11 @@ One-time setup: repo Settings → Pages → Source: **GitHub Actions**.
 Every chart reads from one rating scale defined in `site/common.js` (`SCHEMES`). The current 3-level scale (Needs Support / Meets / Exceeds) is the default.
 The coming 5-level scale is built on 100-point bands, so it is already available as a preview: add `?scale=5` to any page URL
 (`?scale=3` switches back). Its levels are labelled by point band until VDOE's official level names are confirmed; update the names in `SCHEMES.five`.
+
+## Colour rules (keep these when adding charts)
+One meaning per colour, defined in `site/common.js`: green = RRNC, grey = Virginia, orange -> light blue -> blue = rating levels (low -> high),
+tan / slate / brown = site types, dark / light green = emphasis within RRNC data. Chart colours come from `P`, `LEVELS` and `TCOLOR`; the colour key on
+`about.html` is built from the same objects. Rankings use dot plots (no truncated bars).
+
+## Refreshing
+`python scripts/build_data.py` rebuilds `site/data/*.json` (including `meta.json`, which drives the "data last refreshed" line in the footer).

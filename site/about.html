@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>About &amp; definitions · RRNC VQB5 Dashboard</title><link rel="stylesheet" href="style.css">
+<style>
+.gloss{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:10px 18px;margin:0}
+.gloss dt{font-weight:800;color:var(--navy)}.gloss dd{margin:0}
+.key{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 4px;font-size:14px}
+.key span{display:inline-flex;align-items:center;gap:7px}.key i{width:16px;height:16px;border-radius:4px;display:inline-block;border:1px solid rgba(0,0,0,.08)}
+.prose{max-width:820px}.prose li{margin:4px 0}
+@media(max-width:640px){.gloss{grid-template-columns:1fr;gap:2px}.gloss dd{margin-bottom:10px}}
+</style></head>
+<body>
+<main class="wrap">
+<section><h2>About this dashboard and the terms it uses</h2>
+<p class="lead">This site shows how programs in Ready Region North Central (RRNC) performed in Virginia's quality rating system for birth-to-five programs, using data that the Virginia Department of Education (VDOE) publishes. It is an independent visualization; VDOE's published data is the official record.</p></section>
+
+<section><h2>Key terms</h2>
+<div class="card"><dl class="gloss">
+<dt>VQB5</dt><dd>Virginia Quality Birth to Five, the state's system for measuring and improving the quality of publicly funded birth-to-five classrooms. Programs are rated every year.</dd>
+<dt>RRNC</dt><dd>Ready Region North Central, one of the nine Ready Regions VDOE funds to support VQB5 locally. It covers the localities shown on this site.</dd>
+<dt>CLASS</dt><dd>The Classroom Assessment Scoring System, an observation tool that scores teacher-child interactions from 1 (low) to 7 (high). VQB5 uses separate Infant, Toddler and Pre-K versions.</dd>
+<dt>Local and external observations</dt><dd>Every birth-to-five classroom gets two <b>local</b> CLASS observations a year (fall and spring) from observers coordinated by the Ready Region, used for coaching feedback. <b>External</b> observations are done by outside observers for the state on a sample of classrooms, to check consistency across regions.</dd>
+<dt>Interaction points</dt><dd>A site's CLASS results turned into points, roughly its average CLASS score times 100 (up to 700). This is not the 1–7 CLASS score.</dd>
+<dt>Curriculum points</dt><dd>100 points if the site reported using a VDOE-approved curriculum in at least one classroom, otherwise 0.</dd>
+<dt>Total points</dt><dd>Interaction points plus curriculum points, on a scale from 100 to 800.</dd>
+<dt>Quality rating</dt><dd>Based on total points: <b>Needs Support</b> 100–399, <b>Meets Expectations</b> 400–699, <b>Exceeds Expectations</b> 700–800. Ratings are awarded each year and are valid for one year.</dd>
+<dt>Honor Roll</dt><dd>VDOE recognition in three categories: <b>Excellence</b> (a total score of 700 or higher), <b>Top Improvement in Interactions</b> (top 10% for CLASS-score gains among returning sites) and <b>Top Infant and Toddler Quality</b> (top 10% for infant/toddler interaction scores).</dd>
+<dt>Site types</dt><dd><b>Child care centers</b>, <b>public schools</b> and <b>home-based child care</b> (family day homes). VDOE counts Head Start grantees within centers and public schools.</dd>
+<dt>Locality and school district</dt><dd>Each site is listed with its county or city (its locality). For public schools, the locality is the school division. A school division's figures here cover only its public-school sites that take part in VQB5 (pre-K and birth-to-five programs), not every school in the division.</dd>
+<dt>New and returning sites</dt><dd>A <b>new</b> site has no score for the previous year (2024-25). <b>Returning</b> sites were scored in 2024-25.</dd>
+<dt>Percentile</dt><dd>The share of a group that scored below a site. A site at the 90th percentile scored higher than about 90% of the group.</dd>
+</dl></div></section>
+
+<section><h2>Reading the charts</h2>
+<div class="card prose"><p>Each color has one meaning wherever it appears:</p>
+<div class="key" id="key"></div>
+<ul>
+<li><b>Rating levels</b> run from orange (Needs Support) through light blue (Meets) to blue (Exceeds).</li>
+<li><b>Green</b> is always RRNC. <b>Grey</b> is always Virginia as a whole.</li>
+<li><b>Tan, slate and brown</b> mark the three site types.</li>
+<li>Dot charts and line charts may start above zero to show differences; the axis label says so.</li>
+</ul></div></section>
+
+<section><h2>What counts as a meaningful difference?</h2>
+<div class="card prose"><p>Total scores vary by roughly ±50 points from site to site, so a gap of a few points between two groups is usually too small to mean anything, especially for groups with fewer than 20 sites. The Compare page flags small groups and gaps within normal variation. Averages for groups of only a few sites can swing widely and should not be read as the group's overall quality.</p>
+<p>Statewide figures are shown for comparison only. Comparing a public-school site or district with all sites mixes site types that are scored the same way but serve different children in different settings; the “compare only with the same site type” switch narrows the comparison.</p></div></section>
+
+<section><h2>Where the data comes from, and its limits</h2>
+<div class="card prose"><ul>
+<li><b>Quality ratings and points:</b> VDOE's published VQB5 Quality Rating Data workbooks for 2025-26 (file dated 2026-09-29, which also lists each continuing site's 2024-25 and 2023-24 results), 2024-25 and 2023-24. Statewide numbers are aggregates of those files.</li>
+<li><b>CLASS observation counts, averages and curriculum use by classroom:</b> the RRNC 2025-2026 CLASS and Curriculum Data Handout (spring 2026; curriculum use as of June 3, 2026).</li>
+<li><b>External CLASS averages:</b> VDOE's external CLASS averages by Ready Region, as of June 2026. External observations cover a sample of classrooms, and they use different observers than local observations, so compare them with the Virginia figure, not with local scores.</li>
+<li><b>Coaching and professional development hours:</b> RRNC data slides, 2025-26.</li>
+<li><b>Trends and flows</b> show only sites that were still in VQB5 in 2025-26. Sites that have since left are not in the source file, and earlier-year counts on the trend charts can be lower than the counts VDOE reported for those years.</li>
+<li><b>Children served</b> is published only in VDOE's statewide summary and is not included.</li>
+<li>The refresh date for this dashboard's data is shown at the bottom of every page.</li>
+</ul></div></section>
+
+<section><h2>About the rating scale</h2>
+<div class="card prose"><p>VQB5 currently reports three rating levels. VDOE is moving to a five-level system built on 100-point bands (399 or less, 400–499, 500–599, 600–699 and 700–800). This dashboard is built to show either scale and will switch when the official level names are published.</p>
+<p>For official data and questions, contact VDOE at <a href="mailto:vqb5@doe.virginia.gov">vqb5@doe.virginia.gov</a> or visit <a href="https://earlychildhoodquality.doe.virginia.gov/quality-ratings/">earlychildhoodquality.doe.virginia.gov</a>.</p></div></section>
+</main>
+<script src="common.js"></script>
+<script>
+// color key is built from the same palette the charts use, so it cannot drift out of sync
+const sw = (c, t) => `<span><i style="background:${c}"></i>${t}</span>`;
+$('#key').innerHTML = LEVELS.map(l => sw(l.color, l.name)).join('') + sw(P.rrnc, 'RRNC') + sw(P.grey, 'Virginia') + TYPES.map(t => sw(TCOLOR[t], TLABEL[t])).join('');
+init('about', () => {}, {filters: false});
+</script></body></html>

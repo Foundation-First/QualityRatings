@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VQB5 Quality Ratings – North Central Summary</title><link rel="stylesheet" href="style.css">
+<title>Summary · RRNC VQB5 Dashboard</title><link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
 <body>
 <div class="hero" id="hero"><div class="wrap"></div></div>
@@ -48,11 +48,11 @@ function draw() {
   if (scaleKey === 'three') {
     const meets = curL[1] + curL[2];
     $('#hero .wrap').innerHTML = `<h2>${meets} of ${n} sites (${(100 * meets / n).toFixed(1)}%) met or exceeded VQB5 expectations</h2>
-      <p>The RRNC average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st['2025-26'].avg)}. ${curL[2]} sites earned Exceeds Expectations, ${curL[1]} Meets Expectations and ${curL[0]} Needs Support.</p>`;
+      <p>The Ready Region North Central (RRNC) average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st['2025-26'].avg)}. ${curL[2]} sites earned Exceeds Expectations, ${curL[1]} Meets Expectations and ${curL[0]} Needs Support.</p>`;
   } else {
     const top2 = curL[last] + curL[last - 1];
     $('#hero .wrap').innerHTML = `<h2>${pc(top2, n)} of RRNC sites score 600 or higher</h2>
-      <p>The RRNC average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st['2025-26'].avg)}. The largest group (${curL[big]} sites) is at the ${LEVELS[big].name} level.</p>`;
+      <p>The Ready Region North Central (RRNC) average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st['2025-26'].avg)}. The largest group (${curL[big]} sites) is at the ${LEVELS[big].name} level.</p>`;
   }
   $('#kpis').innerHTML = kpis([
     [fmt(n), 'sites rated in 2025-26'],

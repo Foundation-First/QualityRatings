@@ -107,6 +107,8 @@ for r in a.to_dict('records'):
     ))
 
 json.dump(dict(year='2025-26', region=REGION, sites=rows), open('site/data/sites.json', 'w'), separators=(',', ':'))
+import datetime
+json.dump(dict(built=datetime.date.today().isoformat(), vdoeWorkbook='2025-26 VQB5 Quality Rating Data for Website (VDOE file dated 2026-09-29)'), open('site/data/meta.json', 'w'))
 print(len(rows), 'North Central sites written')
 for y in summary['statewide']:
     s = summary['statewide'][y]
