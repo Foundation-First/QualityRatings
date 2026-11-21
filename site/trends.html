@@ -25,8 +25,8 @@ function draw() {
     {barmode: 'stack', yaxis: {title: '% of sites', range: [0, 100]}, legend: {orientation: 'h', y: -0.28, title: {text: 'Points: '}}, annotations: [{text: `n = ${all3.length} sites`, x: 1, y: 1.05, xref: 'paper', yref: 'paper', showarrow: false}]});
 
   const lv = YRS.map(y => LEVELS.map((_, i) => all3.filter(s => levelIdx(get(s, y).tp) === i).length));
-  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => '# ' + y.slice(2)), ...YRS.map(y => '% ' + y.slice(2))],
-    [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => lv[k][i]), ...YRS.map((_, k) => pc(lv[k][i], all3.length))]), ['<b>Total</b>', ...YRS.map(() => `<b>${all3.length}</b>`), ...YRS.map(() => '<b>100%</b>')]]);
+  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2)), ...YRS.map(y => y.slice(2))],
+    [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => lv[k][i]), ...YRS.map((_, k) => pc(lv[k][i], all3.length))]), ['<b>Total</b>', ...YRS.map(() => `<b>${all3.length}</b>`), ...YRS.map(() => '<b>100%</b>')]], 1, [['', 1], ['Sites', 3], ['Percent', 3]]);
 
   const line = (k, name, col) => ({name, type: 'scatter', mode: 'lines+markers', x: YRS, y: YRS.map(y => mean(all3.map(s => get(s, y)[k]).filter(v => v != null))), line: {color: col, width: 3}, hovertemplate: `%{x}: %{y:.0f} pts<extra>${name}</extra>`});
   plot('c-pts', [line('tp', 'Total points', P.blue), line('ip', 'Interaction points', P.green)], {yaxis: {title: 'Average points'}});

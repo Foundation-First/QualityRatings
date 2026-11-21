@@ -25,6 +25,8 @@ const levelCounts = list => levelsFromBins(rangeCounts(list));
 const DESC = LEVELS.map((_, i) => LEVELS.length - 1 - i);   // display order high -> low, like VDOE's own tables
 const TYPES = ['Center', 'Public School', 'Family Day Home'];
 const TLABEL = {Center: 'Child care centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based child care'};
+const TSHORT = {Center: 'Centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based'};   // compact labels for tables
+const distName = n => `${n} Public Schools`;   // a locality's school district, e.g. "Prince William County Public Schools"
 const TCOLOR = {Center: P.blue, 'Public School': '#6B7F91', 'Family Day Home': P.green};
 const AGE_COLOR = {Infant: P.green, Toddler: P.orange, 'Pre-K': P.blue};
 const css = n => ({'--accent': P.blue, '--meets': P.lightBlue, '--grid': P.grid, '--ink': P.ink, '--exceeds': P.greenD, '--needs': P.orange, '--mute': '#5b6b78'}[n]);
@@ -34,7 +36,8 @@ const mean = a => a.length ? sum(a) / a.length : null;
 const fmt = n => n == null ? '–' : n.toLocaleString();
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const pc = (v, n) => { if (!n) return '–'; const p = 100 * v / n; return p > 0 && p < 1 ? '<1%' : Math.round(p) + '%'; };
-const table = (head, rows, numFrom = 1) => `<table><thead><tr>${head.map((h, i) => `<th class="${i >= numFrom ? 'n' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i >= numFrom ? 'n' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+// groups (optional): [[label, colspan], ...] draws a spanning header row above the column headings
+const table = (head, rows, numFrom = 1, groups) => `<table><thead>${groups ? `<tr class="grp">${groups.map(([l, n]) => `<th colspan="${n}">${l}</th>`).join('')}</tr>` : ''}<tr>${head.map((h, i) => `<th class="${i >= numFrom ? 'n' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i >= numFrom ? 'n' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
 const kpis = items => items.map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${s}</span></div>`).join('');
 async function loadJSON(name) { return (await fetch('data/' + name + '.json')).json(); }
 

@@ -17,7 +17,7 @@
 <section><h2>How the region compares and has changed</h2><p class="lead">North Central compared with all Virginia VQB5 sites over the first three program years.</p>
 <div class="grid">
  <div class="card"><h3>Average total points</h3><p>Region average vs. statewide average.</p><div id="c-avg" class="chart short"></div><div class="insight" id="i-avg"></div></div>
- <div class="card"><h3>Average points by site type</h3><p>Region (NC) and state, by program year.</p><div class="tbl" id="t-type"></div></div>
+ <div class="card"><h3>Average points by site type</h3><p>RRNC and Virginia, by program year.</p><div class="tbl" id="t-type"></div></div>
  <div class="card"><h3>Quality ratings over time</h3><p>Number and percent of North Central sites at each rating level (all sites rated that year).</p><div class="tbl" id="t-levels"></div></div>
  <div class="card"><h3>Sites at each rating level, by year</h3><p>Each level has its own scale so none is dwarfed by the others.</p><div id="c-levels" class="chart short"></div></div>
  <div class="card"><h3>Score ranges over time</h3><p>Share of North Central sites in each 100-point range.</p><div id="c-ranges" class="chart"></div><div class="insight" id="i-ranges"></div></div>
@@ -62,7 +62,7 @@ function draw() {
   // --- ratings by site type (levels, high -> low as in VDOE tables)
   const typeL = Object.fromEntries(TYPES.map(t => [t, levelsFromBins(B.byType[t])]));
   $('#t-type-level').innerHTML = table(['Site type', 'Sites', ...DESC.map(i => lvName(i).replace(' Expectations', '')), 'Avg points'],
-    [...TYPES.map(t => [TLABEL[t], sum(typeL[t]), ...DESC.map(i => typeL[t][i]), Math.round(cur.byType[t].avg)]),
+    [...TYPES.map(t => [TSHORT[t], sum(typeL[t]), ...DESC.map(i => typeL[t][i]), Math.round(cur.byType[t].avg)]),
      ['<b>All sites</b>', `<b>${cur.n}</b>`, ...DESC.map(i => `<b>${curL[i]}</b>`), `<b>${Math.round(cur.avg)}</b>`]]);
   const best = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg);
   $('#i-type').innerHTML = `<b>${TLABEL[best[0]]}</b> have the highest average (${Math.round(cur.byType[best[0]].avg)} points); <b>${TLABEL[best[2]].toLowerCase()}</b> the lowest (${Math.round(cur.byType[best[2]].avg)}).`;
@@ -72,22 +72,22 @@ function draw() {
     {barmode: 'stack', xaxis: {title: 'Total score'}, yaxis: {title: 'Sites'}, annotations: tot.map((v, i) => ({x: RANGES[i], y: v, text: `<b>${v}</b>`, showarrow: false, yshift: 12}))});
   $('#i-bins').innerHTML = `<b>${pc(midHigh, cur.n)}</b> of sites score 500–699 and <b>${pc(tot[3], cur.n)}</b> score 600–699. <b>${tot[2]} sites (${pc(tot[2], cur.n)})</b> are in the 500–599 range, including <b>${B.byType.Center[2]} child care centers</b>, the largest opportunity to improve outcomes for children.`;
   $('#t-type-range').innerHTML = table(['Site type', 'Sites', ...RANGE_SHORT, 'Avg points'],
-    [...TYPES.map(t => [TLABEL[t], sum(B.byType[t]), ...B.byType[t], Math.round(cur.byType[t].avg)]),
+    [...TYPES.map(t => [TSHORT[t], sum(B.byType[t]), ...B.byType[t], Math.round(cur.byType[t].avg)]),
      ['<b>All sites</b>', `<b>${cur.n}</b>`, ...tot.map(v => `<b>${v}</b>`), `<b>${Math.round(cur.avg)}</b>`]]);
 
   // --- over time
   const line = (name, d, col) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y: YRS.map(y => d[y].avg), text: YRS.map(y => Math.round(d[y].avg)), textposition: 'top center', line: {color: col, width: 3}, marker: {size: 8}, hovertemplate: `%{x}: %{y:.0f} pts<extra>${name}</extra>`});
-  plot('c-avg', [line('Ready Region North Central', nc, P.blue), line('Virginia', st, P.grey)], {yaxis: {title: 'Average total points', range: [575, 610]}});
+  plot('c-avg', [line('RRNC', nc, P.blue), line('Virginia', st, P.grey)], {yaxis: {title: 'Average total points', range: [575, 610]}});
   $('#i-avg').innerHTML = `The region's average dipped in 2024-25, then rose <b>${Math.round(nc['2025-26'].avg - nc['2024-25'].avg)} points</b> to ${Math.round(nc['2025-26'].avg)} in 2025-26, keeping the region above the state each year.`;
   const g = x => `<span style="color:var(--mute)">${Math.round(x)}</span>`;
-  $('#t-type').innerHTML = table(['Site type', ...YRS.map(y => y.slice(2) + ' NC'), ...YRS.map(y => y.slice(2) + ' state')],
-    [...TYPES.map(t => [TLABEL[t], ...YRS.map(y => Math.round(nc[y].byType[t].avg)), ...YRS.map(y => g(st[y].byType[t].avg))]),
-     ['<b>All sites</b>', ...YRS.map(y => `<b>${Math.round(nc[y].avg)}</b>`), ...YRS.map(y => g(st[y].avg))]]);
+  $('#t-type').innerHTML = table(['Site type', ...YRS.map(y => y.slice(2)), ...YRS.map(y => y.slice(2))],
+    [...TYPES.map(t => [TSHORT[t], ...YRS.map(y => Math.round(nc[y].byType[t].avg)), ...YRS.map(y => g(st[y].byType[t].avg))]),
+     ['<b>All sites</b>', ...YRS.map(y => `<b>${Math.round(nc[y].avg)}</b>`), ...YRS.map(y => g(st[y].avg))]], 1, [['', 1], ['RRNC', 3], ['Virginia', 3]]);
 
   const yb = YRS.map(y => nc[y].bins), yn = yb.map(sum), yl = yb.map(levelsFromBins);
-  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => '# ' + y.slice(2)), ...YRS.map(y => '% ' + y.slice(2))],
+  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2)), ...YRS.map(y => y.slice(2))],
     [...DESC.map(i => [lvName(i), ...YRS.map((_, k) => fmt(yl[k][i])), ...YRS.map((_, k) => pc(yl[k][i], yn[k]))]),
-     ['<b>Total</b>', ...yn.map(v => `<b>${fmt(v)}</b>`), ...YRS.map(() => '<b>100%</b>')]]);
+     ['<b>Total</b>', ...yn.map(v => `<b>${fmt(v)}</b>`), ...YRS.map(() => '<b>100%</b>')]], 1, [['', 1], ['Sites', 3], ['Percent', 3]]);
   // one small chart per level, each on its own scale (levels are never combined)
   const dom = i => [i / 3 + (i ? 0.075 : 0.05), (i + 1) / 3 - 0.01];
   const traces = [], layout = {showlegend: false, margin: {t: 34, r: 10, b: 40, l: 40}, annotations: []};
@@ -106,9 +106,9 @@ function draw() {
     {barmode: 'stack', yaxis: {title: '% of sites', range: [0, 100]}, legend: {orientation: 'h', y: -0.28, title: {text: 'Points: '}}});
   const hi = k => 100 * (yb[k][3] + yb[k][4]) / yn[k];
   $('#i-ranges').innerHTML = `Sites scoring 600 or higher went from <b>${Math.round(hi(0))}%</b> in 2023-24 to <b>${Math.round(hi(1))}%</b> in 2024-25 and <b>${Math.round(hi(2))}%</b> in 2025-26.`;
-  $('#t-ranges').innerHTML = table(['Score range', ...YRS.map(y => '# ' + y.slice(2)), ...YRS.map(y => '% ' + y.slice(2))],
+  $('#t-ranges').innerHTML = table(['Score range', ...YRS.map(y => y.slice(2)), ...YRS.map(y => y.slice(2))],
     [...RANGES.map((r, i) => [r, ...YRS.map((_, k) => fmt(yb[k][i])), ...YRS.map((_, k) => pc(yb[k][i], yn[k]))]),
-     ['<b>Total</b>', ...yn.map(v => `<b>${fmt(v)}</b>`), ...YRS.map(() => '<b>100%</b>')]]);
+     ['<b>Total</b>', ...yn.map(v => `<b>${fmt(v)}</b>`), ...YRS.map(() => '<b>100%</b>')]], 1, [['', 1], ['Sites', 3], ['Percent', 3]]);
 
   // --- new vs returning
   const N = S.newSites, retBins = RANGES.map((_, i) => tot[i] - N.newBins[i]);
@@ -122,7 +122,7 @@ function draw() {
 
   // --- honor roll
   const cats = Object.keys(hn).filter(k => k !== '_unique');
-  $('#t-honor').innerHTML = table(['Honor Roll category', 'Child care centers', 'Home-based child care', 'Public schools', 'North Central', 'Virginia'],
+  $('#t-honor').innerHTML = table(['Honor Roll category', 'Centers', 'Home-based', 'Public schools', 'RRNC total', 'Virginia total'],
     [...cats.map(k => { const r = hn[k]; return [k, r.Center, r['Family Day Home'], k.includes('Infant') ? 'N/A' : r['Public School'], `<b>${sum(TYPES.map(x => r[x]))}</b>`, sum(TYPES.map(x => hs[k][x]))]; }),
      ['<b>Unique sites on any Honor Roll</b>', '', '', '', `<b>${honorTotal} (${pc(honorTotal, cur.n)} of sites)</b>`, `${hs._unique} (${pc(hs._unique, st['2025-26'].n)})`]]);
 }

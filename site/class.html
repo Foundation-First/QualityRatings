@@ -21,7 +21,7 @@
  <div class="card"><h3>Score ranges</h3><p>Lowest to highest classroom total score.</p><div class="tbl" id="t-range"></div></div>
 </div></section>
 
-<section><h2>External CLASS observations: North Central vs. Virginia</h2><p class="lead">Averages from third-party observers (as of June 2026). These use a different observer pool and a sample of classrooms, so they are best compared with the statewide figure, not with local scores.</p>
+<section><h2>External CLASS observations: RRNC vs. Virginia</h2><p class="lead">Averages from third-party observers (as of June 2026). These use a different observer pool and a sample of classrooms, so they are best compared with the statewide figure, not with local scores.</p>
 <div class="row seg" id="age-seg" role="group" aria-label="Age level"></div>
 <div class="grid">
  <div class="card"><h3>Total CLASS average by age level</h3><p id="p-total"></p><div id="c-total" class="chart short"></div></div>
@@ -79,15 +79,15 @@ function draw() {
 
 function drawTotals() {
   const X = CLASS.external;
-  $('#p-total').textContent = 'External observations, all age levels. Classrooms observed (NC / Virginia): ' + AGES.map(a => `${a} ${fmt(X[a].n.nc)} / ${fmt(X[a].n.state)}`).join(', ') + '.';
-  plot('c-total', [{name: 'North Central', type: 'bar', x: AGES, y: AGES.map(a => X[a].total.nc), text: AGES.map(a => f2(X[a].total.nc)), textposition: 'outside', cliponaxis: false, marker: {color: P.blue}, hovertemplate: '%{x}: %{y:.2f}<extra>North Central</extra>'},
+  $('#p-total').textContent = 'External observations, all age levels. Classrooms observed (RRNC / Virginia): ' + AGES.map(a => `${a} ${fmt(X[a].n.nc)} / ${fmt(X[a].n.state)}`).join(', ') + '.';
+  plot('c-total', [{name: 'RRNC', type: 'bar', x: AGES, y: AGES.map(a => X[a].total.nc), text: AGES.map(a => f2(X[a].total.nc)), textposition: 'outside', cliponaxis: false, marker: {color: P.blue}, hovertemplate: '%{x}: %{y:.2f}<extra>RRNC</extra>'},
     {name: 'Virginia', type: 'bar', x: AGES, y: AGES.map(a => X[a].total.state), text: AGES.map(a => f2(X[a].total.state)), textposition: 'outside', cliponaxis: false, marker: {color: P.grey}, hovertemplate: '%{x}: %{y:.2f}<extra>Virginia</extra>'}],
     {barmode: 'group', yaxis: {title: 'Average total CLASS score (1–7)', range: [0, 7]}});
 }
 function drawExternal() {
   const E = CLASS.external[age];
   const grp = (id, labels, nc, st, title, rng, margin) => plot(id, [
-    {name: 'North Central', type: 'bar', x: nc, y: labels, orientation: 'h', marker: {color: P.blue}, text: nc.map(f2), textposition: 'outside', cliponaxis: false, hovertemplate: '%{y}: %{x:.2f}<extra>North Central</extra>'},
+    {name: 'RRNC', type: 'bar', x: nc, y: labels, orientation: 'h', marker: {color: P.blue}, text: nc.map(f2), textposition: 'outside', cliponaxis: false, hovertemplate: '%{y}: %{x:.2f}<extra>RRNC</extra>'},
     {name: 'Virginia', type: 'bar', x: st, y: labels, orientation: 'h', marker: {color: P.grey}, text: st.map(f2), textposition: 'outside', cliponaxis: false, hovertemplate: '%{y}: %{x:.2f}<extra>Virginia</extra>'}],
     {barmode: 'group', xaxis: {title, range: rng || [0, 7.6]}, yaxis: {autorange: 'reversed', ticklabelstandoff: 8}, margin: margin || {t: 10, r: 20, b: 70, l: 190}});
   grp('c-dims', E.dims.map(x => x[0]), E.dims.map(x => x[1]), E.dims.map(x => x[2]), 'Average score (1–7)', null, {t: 10, r: 30, b: 70, l: 230});
@@ -99,7 +99,7 @@ function drawExternal() {
   grp('c-site', sites.map(([t]) => TLABEL[t]), sites.map(([, v]) => v[0]), sites.map(([, v]) => v[1]), 'Average score (1–7)', null, {t: 10, r: 20, b: 70, l: 170});
   $('#card-domains').style.display = E.domains ? '' : 'none';
   if (E.domains) grp('c-domains', E.domains.map(x => x[0]), E.domains.map(x => x[1]), E.domains.map(x => x[2]), 'Average score (1–7)', null, {t: 10, r: 20, b: 70, l: 210});
-  $('#n-neg').textContent = E.negClimate ? `Negative Climate (lower is better): North Central ${f2(E.negClimate.nc)}, Virginia ${f2(E.negClimate.state)}.` : 'The infant tool has four dimensions and no Negative Climate dimension.';
+  $('#n-neg').textContent = E.negClimate ? `Negative Climate (lower is better): RRNC ${f2(E.negClimate.nc)}, Virginia ${f2(E.negClimate.state)}.` : 'The infant tool has four dimensions and no Negative Climate dimension.';
 }
 init('class', draw, {filters: false, class: true});
 </script></body></html>

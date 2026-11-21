@@ -100,7 +100,7 @@ function refreshControls(focusType) {
   const opt = (v, l) => `<option value="${esc(v)}">${esc(l)}</option>`;
   $('#p-place').innerHTML = '<option value="">Whole region (no locality selected)</option>' +
     '<optgroup label="Localities – all programs">' + Object.keys(loc).sort().map(l => opt('loc:' + l, `${l} (${loc[l]} sites)`)).join('') + '</optgroup>' +
-    '<optgroup label="School districts – public schools only">' + Object.keys(dist).sort().map(l => opt('dist:' + l, `${l} schools (${dist[l]})`)).join('') + '</optgroup>';
+    '<optgroup label="School districts – public schools only">' + Object.keys(dist).sort().map(l => opt('dist:' + l, `${distName(l)} (${dist[l]})`)).join('') + '</optgroup>';
   $('#p-place').value = ui.place;
   const pool = ALL.filter(s => (!ui.place || s.county === placeName()) && (kind !== 'dist' || s.type === PS)).sort((a, b) => a.name.localeCompare(b.name));
   $('#p-site').innerHTML = '<option value="">No single site</option>' + pool.map(s => opt(s.id, s.name + (ui.place ? '' : ' – ' + s.county))).join('');
@@ -124,12 +124,12 @@ function draw() {
   if (site) levels.push({k: 'site', label: 'Site: ' + site.name, ...stats([site]), list: [site]});
   if (kind === 'dist') {
     const l = ALL.filter(s => s.county === name && s.type === PS);
-    levels.push({k: 'dist', label: 'School district: ' + name, ...stats(l), list: l});
-    if (!within) { const a = ALL.filter(s => s.county === name); levels.push({k: 'loc', label: `Locality (all programs): ${name}`, ...stats(a), list: a}); }
+    levels.push({k: 'dist', label: distName(name), nm: distName(name), ...stats(l), list: l});
+    if (!within) { const a = ALL.filter(s => s.county === name); levels.push({k: 'loc', label: `Locality (all programs): ${name}`, nm: name, ...stats(a), list: a}); }
   } else if (kind === 'loc') {
     const g = site ? wt : (ui.type || wt);
     const l = ALL.filter(s => s.county === name && typeOK(g)(s));
-    levels.push({k: 'loc', label: `Locality: ${name}`, ...stats(l), list: l});
+    levels.push({k: 'loc', label: `Locality: ${name}`, nm: name, ...stats(l), list: l});
   }
   const regionType = wt || (!kind && !site ? ui.type : '');
   const regionList = ALL.filter(typeOK(regionType));
@@ -144,7 +144,7 @@ function draw() {
   if (bad) return;
 
   const focus = levels[0], others = levels.slice(1);
-  $('#h-where').textContent = site ? 'Where this site sits' : kind === 'dist' ? `How ${name} schools compare` : kind === 'loc' ? `How ${name} compares` : 'How the region compares with Virginia';
+  $('#h-where').textContent = site ? 'Where this site sits' : kind === 'dist' ? `How ${distName(name)} compare` : kind === 'loc' ? `How ${name} compares` : 'How the region compares with Virginia';
   $('#l-where').textContent = within ? `Comparing only with ${sName}.` : kind === 'dist' ? 'The broader levels include every program type, so this shows how the district sits within the whole community. Use the toggle to compare with public schools only.' : 'The broader levels include all site types. Use the toggle to compare only with the same site type.';
   const diff = (a, b) => { const d = Math.round(a - b); return (d > 0 ? '+' : '') + d; };
   $('#kpis').innerHTML = kpis([[f0(focus.tp), `average total points · ${esc(focus.label)}`], ...others.map(l => [`${diff(focus.tp, l.tp)} pts`, `vs. ${esc(l.label)} (${f0(l.tp)})`])]);
@@ -159,7 +159,7 @@ function draw() {
   $('#p-dist').textContent = `Grey bars show every Virginia site${regionType ? ' of this type' : ''}; lines mark the average for each level.`;
   const pctOf = l => l.k === 'state' ? pctileState(regionType, site.tp) : pctileList(l.list, site.tp);
   if (site) {
-    const parts = others.map(l => `${pctOf(l)}% ${l.k === 'state' ? 'of Virginia ' + sName : l.k === 'region' ? 'in the region' : 'in ' + esc(l.label.replace(/^[^:]+: /, '')) + (l.k === 'dist' ? ' schools' : '')}`);
+    const parts = others.map(l => `${pctOf(l)}% ${l.k === 'state' ? 'of Virginia ' + sName : l.k === 'region' ? 'in the region' : 'in ' + esc(l.nm)}`);
     $('#i-dist').innerHTML = `<b>${esc(site.name)}</b> scored <b>${f0(site.tp)}</b> points (${esc(levelOf(site.tp))}), higher than about ${parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0]}.`;
   } else $('#i-dist').innerHTML = `${esc(focus.label)} averages <b>${f0(focus.tp)}</b> points: ` + others.map(l => `<b>${diff(focus.tp, l.tp)}</b> vs. ${esc(l.label)}`).join(', ') + '.';
 
@@ -194,12 +194,12 @@ function draw() {
   const regAvg = stats(ALL.filter(typeOK(rankType))).tp, stAvg = stateStats(rankType).tp;
   $('#h-rank').textContent = isDist ? 'How school districts compare' : 'How localities compare';
   $('#l-rank').textContent = (isDist ? 'Average total points for public schools in each school district. ' : `Average total points by locality for ${rankType ? TLABEL[rankType].toLowerCase() : 'sites of all types'}. `) + 'Hover for the number of sites; lighter bars have fewer than 5 sites, so treat them with caution.';
-  plot('c-rank', [{type: 'bar', orientation: 'h', y: rk.map(r => `${r[0]} (${r[2]})`), x: rk.map(r => r[1]), customdata: rk.map(r => r[2]),
+  plot('c-rank', [{type: 'bar', orientation: 'h', y: rk.map(r => `${isDist ? distName(r[0]) : r[0]} (${r[2]})`), x: rk.map(r => r[1]), customdata: rk.map(r => r[2]),
       marker: {color: rk.map(r => r[0] === name ? P.greenD : P.blue), opacity: rk.map(r => r[2] < 5 ? 0.45 : 1)}, text: rk.map(r => f0(r[1])), textposition: 'outside', cliponaxis: false,
       hovertemplate: '%{y}<br>Average: %{x:.0f} points (%{customdata} sites)<extra></extra>'}],
     {shapes: [{type: 'line', x0: regAvg, x1: regAvg, y0: 0, y1: 1, yref: 'paper', line: {color: P.blue, dash: 'dash', width: 2}}, {type: 'line', x0: stAvg, x1: stAvg, y0: 0, y1: 1, yref: 'paper', line: {color: P.grey, dash: 'dot', width: 2}}],
      annotations: [{x: regAvg, y: 1.02, yref: 'paper', text: 'Region ' + f0(regAvg), showarrow: false, xanchor: 'right', font: {color: P.blue}}, {x: stAvg, y: 1.02, yref: 'paper', text: 'Virginia ' + f0(stAvg), showarrow: false, xanchor: 'left', font: {color: '#666'}}],
-     xaxis: {title: 'Average total points', range: [Math.min(500, ...rk.map(r => r[1])) - 10, Math.max(700, ...rk.map(r => r[1])) + 25]}, margin: {t: 26, r: 40, b: 50, l: 200}, showlegend: false});
+     xaxis: {title: 'Average total points', range: [Math.min(500, ...rk.map(r => r[1])) - 10, Math.max(700, ...rk.map(r => r[1])) + 25]}, margin: {t: 26, r: 40, b: 50, l: isDist ? 290 : 200}, showlegend: false});
   $('#c-rank').style.height = Math.max(320, rk.length * 24 + 80) + 'px';
   Plotly.Plots.resize('c-rank');
 }
