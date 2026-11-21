@@ -1,46 +1,51 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>VQB5 Scores Explorer – North Central</title><link rel="stylesheet" href="style.css">
+<title>VQB5 Ratings Explorer – North Central</title><link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
-<body><main class="wrap"><section><h2>Explore ratings</h2><p class="lead">Filter by locality, site type, score range, age group, funding, honor roll or curriculum. Every chart on this page updates to match. Scores are VQB5 total rating points (100–800); the Meets Expectations range runs from 400 to 699. Use “Reset filters” to start over.</p></section>
+<body><main class="wrap"><section><h2>Explore ratings</h2><p class="lead">Filter by locality, site type, rating, score range, age group, funding, honor roll or curriculum. Every chart on this page updates to match. Use the view menu on a chart to switch between rating levels and 100-point score ranges. Use “Reset filters” to start over.</p></section>
 <div class="kpis" id="kpis"></div>
 <div class="grid">
- <div class="card"><h3>Score ranges by age group served</h3><p>How sites in each group fall across the 100-point ranges.</p>
-  <div class="row seg"><button data-m="count" class="on">Number of sites</button><button data-m="pct">Percent of group</button></div><div id="c-ages" class="chart"></div></div>
- <div class="card"><h3>Score ranges by site type</h3><p>Centers, public schools and family day homes.</p>
-  <div class="row seg"><button data-m="count" class="on">Number of sites</button><button data-m="pct">Percent of group</button></div><div id="c-type" class="chart"></div></div>
+ <div class="card"><h3>By age group served</h3><p>How sites in each group are distributed.</p>
+  <div class="row"><label>View<select class="viewsel" data-k="ages"></select></label></div><div id="c-ages" class="chart"></div></div>
+ <div class="card"><h3>By site type</h3><p>Centers, public schools and family day homes.</p>
+  <div class="row"><label>View<select class="viewsel" data-k="type"></select></label></div><div id="c-type" class="chart"></div></div>
  <div class="card"><h3>Distribution of total points</h3><p>Interaction points (CLASS) plus curriculum points, one count per site.</p><div id="c-hist" class="chart"></div></div>
  <div class="card"><h3>Interaction points by site type</h3><p>Box = middle 50% of sites; line = median.</p><div id="c-box" class="chart"></div></div>
  <div class="card" style="grid-column:1/-1"><h3>Average score by locality</h3><p>Average total points for the sites in each locality (number of sites in parentheses). Lighter bars have fewer than 5 sites.</p><div id="c-county" class="chart"></div></div>
+ <div class="card" style="grid-column:1/-1"><h3>Ratings and score ranges by locality</h3><p>Number of sites at each rating level and in each 100-point range.</p><div class="tbl" id="t-county"></div></div>
 </div></main>
 <script src="common.js"></script>
 <script>
-const mode = {ages: 'count', type: 'count'};
-document.querySelectorAll('.seg').forEach((g, i) => g.addEventListener('click', e => {
-  if (!e.target.dataset.m) return;
-  g.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.target));
-  mode[i ? 'type' : 'ages'] = e.target.dataset.m; draw();
-}));
+const VIEWS = [['level-count', 'Rating levels (number of sites)'], ['level-pct', 'Rating levels (percent of group)'], ['range-count', 'Score ranges (number of sites)'], ['range-pct', 'Score ranges (percent of group)']];
+const view = {ages: 'level-count', type: 'level-count'};
+document.querySelectorAll('.viewsel').forEach(sel => {
+  sel.innerHTML = VIEWS.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  sel.value = view[sel.dataset.k];
+  sel.addEventListener('change', () => { view[sel.dataset.k] = sel.value; draw(); });
+});
 
-function stacked(id, key, m) {
+function stacked(id, key, v) {
+  const [kind, m] = v.split('-');
   const groups = [...new Set(FILTERED.map(s => s[key]))].sort();
-  const counts = Object.fromEntries(groups.map(g => [g, rangeCounts(FILTERED.filter(s => s[key] === g))]));
+  const items = kind === 'level' ? LEVELS.map((l, i) => ({name: l.name, color: l.color, text: l.text, i})) : RANGES.map((r, i) => ({name: r + ' points', color: RANGE_COLORS[i], text: RANGE_TEXT[i], i}));
+  const counts = Object.fromEntries(groups.map(g => { const l = FILTERED.filter(s => s[key] === g); return [g, kind === 'level' ? levelCounts(l) : rangeCounts(l)]; }));
   const tot = Object.fromEntries(groups.map(g => [g, sum(counts[g])]));
-  plot(id, RANGES.map((r, i) => ({name: r, type: 'bar', x: groups, marker: {color: RANGE_COLORS[i]},
-    y: groups.map(g => m === 'pct' ? (tot[g] ? 100 * counts[g][i] / tot[g] : 0) : counts[g][i]), customdata: groups.map(g => counts[g][i]),
-    hovertemplate: `%{x}<br>${r} points: %{customdata} sites` + (m === 'pct' ? ' (%{y:.0f}%)' : '') + '<extra></extra>'})),
-    {barmode: 'stack', yaxis: {title: m === 'pct' ? '% of group' : 'Sites'}, xaxis: {tickangle: -25}, legend: {orientation: 'h', y: -0.5, title: {text: 'Points: '}}, margin: {t: 10, r: 10, b: 130, l: 55}});
+  plot(id, items.map(it => ({name: it.name, type: 'bar', x: groups, marker: {color: it.color},
+    y: groups.map(g => m === 'pct' ? (tot[g] ? 100 * counts[g][it.i] / tot[g] : 0) : counts[g][it.i]), customdata: groups.map(g => counts[g][it.i]),
+    text: groups.map(g => { const p = tot[g] ? 100 * counts[g][it.i] / tot[g] : 0; return m === 'pct' && p >= 8 ? Math.round(p) + '%' : ''; }), textposition: 'inside', insidetextfont: {color: it.text},
+    hovertemplate: `%{x}<br>${it.name}: %{customdata} sites` + (m === 'pct' ? ' (%{y:.0f}%)' : '') + '<extra></extra>'})),
+    {barmode: 'stack', yaxis: {title: m === 'pct' ? '% of group' : 'Sites'}, xaxis: {tickangle: -25}, legend: {orientation: 'h', y: -0.5}, margin: {t: 10, r: 10, b: 130, l: 55}});
 }
 
 function draw() {
   const F = FILTERED, n = F.length, tp = F.map(s => s.tp).filter(v => v != null), ip = F.map(s => s.ip).filter(v => v != null);
-  const c = rangeCounts(F), pct = v => n ? Math.round(100 * v / n) + '%' : '–';
+  const L = levelCounts(F), pct = v => n ? pc(v, n) : '–';
   $('#kpis').innerHTML = kpis([
-    [fmt(n), 'sites in selection'], [tp.length ? Math.round(mean(tp)) : '–', 'average total points'], [ip.length ? Math.round(mean(ip)) : '–', 'average interaction points'],
-    [pct(c[2]), `of sites score 500–599 (${fmt(c[2])})`], [pct(c[3] + c[4]), `of sites score 600 or higher (${fmt(c[3] + c[4])})`],
+    [fmt(n), 'sites in selection'], [tp.length ? Math.round(mean(tp)) : '–', 'average total points'],
+    [fmt(L[2]), `Exceeds Expectations (${pct(L[2])})`], [fmt(L[1]), `Meets Expectations (${pct(L[1])})`], [fmt(L[0]), `Needs Support (${pct(L[0])})`],
   ]);
-  stacked('c-ages', 'ages', mode.ages);
-  stacked('c-type', 'type', mode.type);
+  stacked('c-ages', 'ages', view.ages);
+  stacked('c-type', 'type', view.type);
 
   plot('c-hist', [{type: 'histogram', x: tp, xbins: {size: 20}, marker: {color: P.blue}, hovertemplate: '%{x} pts: %{y} sites<extra></extra>'}],
     {xaxis: {title: 'Total points'}, yaxis: {title: 'Sites'}, bargap: 0.05, margin: {t: 10, r: 10, b: 50, l: 55}});
@@ -49,13 +54,16 @@ function draw() {
 
   const by = {};
   F.forEach(s => (by[s.county] ??= []).push(s));
-  const rows = Object.entries(by).map(([k, v]) => [k, mean(v.map(s => s.tp)), v.length, v.filter(s => s.tp >= 600).length]).sort((a, b) => a[1] - b[1]);
-  plot('c-county', [{type: 'bar', orientation: 'h', y: rows.map(r => `${r[0]} (${r[2]})`), x: rows.map(r => r[1]), customdata: rows.map(r => [r[2], Math.round(100 * r[3] / r[2])]),
+  const rows = Object.entries(by).map(([k, v]) => [k, mean(v.map(s => s.tp)), v.length]).sort((a, b) => a[1] - b[1]);
+  plot('c-county', [{type: 'bar', orientation: 'h', y: rows.map(r => `${r[0]} (${r[2]})`), x: rows.map(r => r[1]), customdata: rows.map(r => r[2]),
     marker: {color: P.blue, opacity: rows.map(r => r[2] < 5 ? 0.45 : 1)}, text: rows.map(r => Math.round(r[1])), textposition: 'outside', cliponaxis: false,
-    hovertemplate: '%{y}<br>Average: %{x:.0f} points<br>%{customdata[1]}% of sites score 600 or higher<extra></extra>'}],
+    hovertemplate: '%{y}<br>Average: %{x:.0f} points<extra></extra>'}],
     {xaxis: {title: 'Average total points', range: [Math.min(500, ...rows.map(r => r[1])) - 10, Math.max(660, ...rows.map(r => r[1])) + 25]}, showlegend: false, margin: {t: 10, r: 40, b: 50, l: 200}});
   $('#c-county').style.height = Math.max(300, rows.length * 28 + 80) + 'px';
   Plotly.Plots.resize('c-county');
+
+  const trows = Object.keys(by).sort().map(k => { const l = by[k], lc = levelCounts(l), rc = rangeCounts(l); return [k, l.length, ...DESC.map(i => lc[i]), ...rc, Math.round(mean(l.map(s => s.tp)))]; });
+  $('#t-county').innerHTML = table(['Locality', 'Sites', ...DESC.map(i => LEVELS[i].name.replace(' Expectations', '')), ...['≤399', '400-499', '500-599', '600-699', '700-800'], 'Avg points'], trows);
 }
 init('overview', draw);
 </script></body></html>

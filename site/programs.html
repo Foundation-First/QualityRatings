@@ -10,6 +10,7 @@
  <div class="card"><h3>Public funding sources</h3><p>Sites in the selection receiving each source (a site can have several).</p><div id="c-fund" class="chart tall"></div></div>
  <div class="card"><h3>Age groups served</h3><p>Classroom age groups per site (a site can serve several).</p><div id="c-rooms" class="chart"></div></div>
  <div class="card"><h3>Score ranges by funding source</h3><p>Share of sites in each 100-point range among sites receiving that source.</p><div id="c-fr" class="chart"></div></div>
+ <div class="card"><h3>Quality ratings by funding source</h3><p>Number of sites at each rating level, for the most common funding sources.</p><div class="tbl" id="t-fl"></div></div>
  <div class="card"><h3>Honor roll designations</h3><p>Excellence, Improvement and Infant/Toddler honor roll counts.</p><div id="c-honor" class="chart"></div></div>
 </div></main>
 <script src="common.js"></script>
@@ -38,6 +39,8 @@ function draw() {
   hbar('c-rooms', countBy(F, s => s.rooms), 5, 80);
   hbar('c-honor', countBy(F, s => s.honor), 5, 110);
   const fc = countBy(F, s => s.fund), keys = Object.keys(fc).sort((a, b) => fc[b] - fc[a]).slice(0, 10).reverse();
+  const fl = [...keys].reverse().map(k => { const l = F.filter(s => s.fund.includes(k)), c = levelCounts(l); return [k, l.length, ...DESC.map(i => c[i])]; });
+  $('#t-fl').innerHTML = table(['Funding source', 'Sites', ...DESC.map(i => LEVELS[i].name.replace(' Expectations', ''))], fl);
   const fcnt = Object.fromEntries(keys.map(k => [k, rangeCounts(F.filter(s => s.fund.includes(k)))]));
   plot('c-fr', RANGES.map((r, i) => ({name: r, type: 'bar', orientation: 'h', y: keys, marker: {color: RANGE_COLORS[i]},
     x: keys.map(k => { const t = sum(fcnt[k]); return t ? 100 * fcnt[k][i] / t : 0; }), customdata: keys.map(k => fcnt[k][i]),

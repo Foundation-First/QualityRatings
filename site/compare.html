@@ -160,7 +160,7 @@ function draw() {
   const pctOf = l => l.k === 'state' ? pctileState(regionType, site.tp) : pctileList(l.list, site.tp);
   if (site) {
     const parts = others.map(l => `${pctOf(l)}% ${l.k === 'state' ? 'of Virginia ' + sName : l.k === 'region' ? 'in the region' : 'in ' + esc(l.label.replace(/^[^:]+: /, '')) + (l.k === 'dist' ? ' schools' : '')}`);
-    $('#i-dist').innerHTML = `<b>${esc(site.name)}</b> scored <b>${f0(site.tp)}</b> points, higher than about ${parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0]}.`;
+    $('#i-dist').innerHTML = `<b>${esc(site.name)}</b> scored <b>${f0(site.tp)}</b> points (${esc(levelOf(site.tp))}), higher than about ${parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0]}.`;
   } else $('#i-dist').innerHTML = `${esc(focus.label)} averages <b>${f0(focus.tp)}</b> points: ` + others.map(l => `<b>${diff(focus.tp, l.tp)}</b> vs. ${esc(l.label)}`).join(', ') + '.';
 
   // Share of sites by 100-point range
@@ -177,6 +177,7 @@ function draw() {
     ['Average total points', ...levels.map(l => `<b>${f0(l.tp)}</b>`)],
     ['Average interaction points (CLASS)', ...levels.map(l => f0(l.ip))],
     ['Average curriculum points', ...levels.map(l => f0(l.cp))],
+    ...DESC.map(i => [`${LEVELS[i].name} (${LEVELS[i].pts})`, ...levels.map(l => l.k === 'site' ? yes(levelIdx(site.tp) === i) : pc(levelsFromBins(l.bins)[i], sum(l.bins)))]),
     ['Score 500–599 (mid range)', ...levels.map(l => l.k === 'site' ? yes(site.tp >= 500 && site.tp < 600) : pc(l.bins[2], sum(l.bins)))],
     ['Score 600 or higher', ...levels.map(l => l.k === 'site' ? yes(site.tp >= 600) : pc(l.bins[3] + l.bins[4], sum(l.bins)))],
   ];

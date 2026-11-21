@@ -8,6 +8,21 @@ const rangeIdx = v => v == null ? -1 : v <= 399 ? 0 : v <= 499 ? 1 : v <= 599 ? 
 const rangeOf = v => v == null ? null : RANGES[rangeIdx(v)];
 // share of `list` (sites with a total score) in each range -> counts array
 const rangeCounts = list => { const c = RANGES.map(() => 0); list.forEach(s => { const i = rangeIdx(s.tp); if (i >= 0) c[i]++; }); return c; };
+// Rating levels are defined as groups of the 100-point ranges above, so every chart can switch scheme in one place.
+// Current VQB5: 3 levels. The coming 5-level system is built on 100-point bands; add it here once VDOE's official
+// level names and cut-offs are confirmed (do not guess them). Levels run low -> high.
+const SCHEMES = {
+  three: {name: '3-level (current)', groups: [[0], [1, 2, 3], [4]], levels: [
+    {name: 'Needs Support', pts: '100-399', color: P.orange, text: '#23323f'},
+    {name: 'Meets Expectations', pts: '400-699', color: P.lightBlue, text: '#23323f'},
+    {name: 'Exceeds Expectations', pts: '700-800', color: P.greenD, text: '#fff'}]},
+};
+const SCHEME = SCHEMES.three, LEVELS = SCHEME.levels;
+const levelsFromBins = bins => SCHEME.groups.map(g => sum(g.map(i => bins[i])));   // counts per level, low -> high
+const levelIdx = tp => tp == null ? -1 : SCHEME.groups.findIndex(g => g.includes(rangeIdx(tp)));
+const levelOf = tp => LEVELS[levelIdx(tp)]?.name ?? null;
+const levelCounts = list => levelsFromBins(rangeCounts(list));
+const DESC = LEVELS.map((_, i) => LEVELS.length - 1 - i);   // display order high -> low, like VDOE's own tables
 const TYPES = ['Center', 'Public School', 'Family Day Home'];
 const TLABEL = {Center: 'Child care centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based child care'};
 const TCOLOR = {Center: P.blue, 'Public School': '#6B7F91', 'Family Day Home': P.green};
@@ -30,6 +45,7 @@ let DATA, SUMMARY, CLASS, BENCH, ALL, FILTERED = [], onChange = () => {};
 const FILTERS = [
   ['county', 'Locality', s => [s.county]],
   ['type', 'Site type', s => [s.type]],
+  ['level', 'Quality rating', s => [levelOf(s.tp)]],
   ['range', 'Score range (total points)', s => [rangeOf(s.tp)]],
   ['rooms', 'Age group served', s => s.rooms],
   ['fund', 'Public funding', s => s.fund],
@@ -66,6 +82,7 @@ function refreshOptions() {
     if (state[k] && !(state[k] in counts)) delete state[k];
     let keys = Object.keys(counts).sort();
     if (k === 'range') keys = RANGES.filter(r => counts[r]);
+    if (k === 'level') keys = LEVELS.map(l => l.name).filter(r => counts[r]);
     const sel = $('#f-' + k);
     sel.innerHTML = '<option value="">All</option>' + keys.map(v => `<option value="${esc(v)}">${esc(v)} (${counts[v]})</option>`).join('');
     sel.value = state[k] || '';
