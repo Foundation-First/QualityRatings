@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VQB5 Quality Ratings – Trends</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
+<body><main class="wrap">
+<p class="note">Trends use the sites in your filtered selection that were also rated in earlier years (matched by site, as published in the 2025-26 file). Sites that closed or left VQB5 before 2025-26 are not in the source file, so these are continuing sites only.</p>
+<div class="grid">
+ <div class="card"><h2>Rating mix by year</h2><p>Sites with a rating in all three years.</p><div id="c-mix" class="chart"></div></div>
+ <div class="card"><h2>Average points by year</h2><p>Same continuing sites; lines show average interaction and total points.</p><div id="c-pts" class="chart"></div></div>
+ <div class="card"><h2>Movement 2024-25 → 2025-26</h2><p>Each cell is the number of sites moving from the row rating to the column rating.</p><div id="c-flow" class="chart"></div></div>
+ <div class="card"><h2>Change in interaction points, 2024-25 → 2025-26</h2><p>Positive = score went up. One count per site.</p><div id="c-delta" class="chart"></div></div>
+</div></main>
+<script src="common.js"></script>
+<script>
+const YRS = ['2023-24', '2024-25', '2025-26'];
+const get = (s, y) => y === '2025-26' ? {rating: s.rating, ip: s.ip, tp: s.tp} : s.hist[y];
+function draw() {
+  const all3 = FILTERED.filter(s => YRS.every(y => get(s, y)?.rating));
+  const traces = RATINGS.map(r => ({name: r, type: 'bar', x: YRS, marker: {color: rcolor(r)},
+    y: YRS.map(y => all3.length ? 100 * all3.filter(s => get(s, y).rating === r).length / all3.length : 0),
+    customdata: YRS.map(y => all3.filter(s => get(s, y).rating === r).length), hovertemplate: `%{x}<br>${r}: %{customdata} sites (%{y:.1f}%)<extra></extra>`}));
+  plot('c-mix', traces, {barmode: 'stack', yaxis: {title: '% of sites', range: [0, 100]}, annotations: [{text: `n = ${all3.length} sites`, x: 1, y: 1.05, xref: 'paper', yref: 'paper', showarrow: false}]});
+
+  const line = (k, name, col) => ({name, type: 'scatter', mode: 'lines+markers', x: YRS, y: YRS.map(y => mean(all3.map(s => get(s, y)[k]).filter(v => v != null))), line: {color: col}, hovertemplate: `%{x}: %{y:.0f} pts<extra>${name}</extra>`});
+  plot('c-pts', [line('tp', 'Total points', css('--accent')), line('ip', 'Interaction points', css('--exceeds'))], {yaxis: {title: 'Average points'}});
+
+  const both = FILTERED.filter(s => s.hist['2024-25']?.rating);
+  const z = RATINGS.map(a => RATINGS.map(b => both.filter(s => s.hist['2024-25'].rating === a && s.rating === b).length));
+  plot('c-flow', [{type: 'heatmap', x: RATINGS, y: RATINGS, z, colorscale: [[0, css('--grid')], [1, css('--accent')]], showscale: false,
+    text: z.map(r => r.map(String)), texttemplate: '%{text}', hovertemplate: '2024-25 %{y} → 2025-26 %{x}: %{z} sites<extra></extra>'}],
+    {xaxis: {title: '2025-26 rating', side: 'bottom'}, yaxis: {title: '2024-25 rating', autorange: 'reversed'}, margin: {t: 10, r: 10, b: 60, l: 150}});
+
+  const d = both.filter(s => s.ip != null && s.hist['2024-25'].ip != null).map(s => s.ip - s.hist['2024-25'].ip);
+  plot('c-delta', [{type: 'histogram', x: d, xbins: {size: 10}, marker: {color: css('--accent')}, hovertemplate: 'Change %{x}: %{y} sites<extra></extra>'}],
+    {xaxis: {title: 'Change in interaction points'}, yaxis: {title: 'Sites'}, bargap: 0.05,
+     annotations: [{text: d.length ? `median ${[...d].sort((a, b) => a - b)[d.length >> 1]} pts` : '', x: 1, y: 1.05, xref: 'paper', yref: 'paper', showarrow: false}]});
+}
+init('trends', draw);
+</script></body></html>
