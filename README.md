@@ -36,4 +36,4 @@ tan / slate / brown = site types, dark / light green = emphasis within RRNC data
 
 ## Type and look
 Minimum text size is 16px on the page and 15px inside charts (set in `site/style.css` and the `plot()` helper in `site/common.js`); keep new text at or above that.
-The look is deliberately plain: flat navy banner, thin-bordered cards with small corners, no shadows, no colored side-bars, no gradients. Bold is reserved for place names and headline figures.
+The look is polished but restrained: flat navy banner with a green base edge, white cards with soft shadows and 10px corners, tiles that overlap the banner, shaded table headers, chevrons on the question cards. Avoided on purpose: gradients, colored side-bars on callouts, colored top borders on tiles, arrows used as punctuation, and bold on every number.
