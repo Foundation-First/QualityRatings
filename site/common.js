@@ -17,8 +17,8 @@ const bandCounts = list => { const c = BANDS.map(() => 0); list.forEach(s => { c
 const SCHEMES = {
   three: {key: 'three', title: '3-level', groups: [[0], [1, 2, 3], [4]], levels: [
     {name: 'Needs Support', short: 'Needs Support', pts: '100-399', color: P.orange, text: '#23323f'},
-    {name: 'Meets Expectations', short: 'Meets', pts: '400-699', color: P.lightBlue, text: '#23323f'},
-    {name: 'Exceeds Expectations', short: 'Exceeds', pts: '700-800', color: P.blue, text: '#fff'}]},
+    {name: 'Meets Expectations', short: 'Meets Expectations', pts: '400-699', color: P.lightBlue, text: '#23323f'},
+    {name: 'Exceeds Expectations', short: 'Exceeds Expectations', pts: '700-800', color: P.blue, text: '#fff'}]},
   five: {key: 'five', title: '5-level (preview)', groups: [[0], [1], [2], [3], [4]], levels: [
     {name: '399 or less', short: '399 or less', pts: '100-399', color: '#F7941D', text: '#23323f'},
     {name: '400-499', short: '400-499', pts: '400-499', color: '#FBC77A', text: '#23323f'},
@@ -39,6 +39,10 @@ const levelOf = tp => LEVELS[levelIdx(tp)]?.name ?? null;
 const levelCounts = list => levelsFromBins(bandCounts(list));
 const DESC = LEVELS.map((_, i) => LEVELS.length - 1 - i);   // display order high -> low, like VDOE's own tables
 const lvShort = i => LEVELS[i].short;
+// table column header for a level: two short lines so the full name (always with "Expectations") fits a narrow card
+const lvHead = i => LEVELS[i].name.replace(/ (Expectations|Support)$/, '<br>$1');
+// "502 (98%)": a count with its share in parentheses
+const np = (v, t) => `${fmt(v)} (${pc(v, t)})`;
 const TYPES = ['Center', 'Public School', 'Family Day Home'];
 const TLABEL = {Center: 'Child care centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based child care'};
 const TSHORT = {Center: 'Centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based'};   // compact labels for tables
@@ -191,7 +195,7 @@ function dotRank(id, rows, refs, highlight) {
     hovertemplate: '%{y}<br>Average: %{x:.0f} points<extra></extra>'}],
     {shapes: refs.map(r => ({type: 'line', x0: r.x, x1: r.x, y0: 0, y1: 1, yref: 'paper', line: {color: r.color, dash: r.dash || 'dash', width: 2}})),
      annotations: refs.map((r, i) => ({x: r.x, y: 1.04, yref: 'paper', text: `${r.label} ${Math.round(r.x)}`, showarrow: false, xanchor: i ? 'left' : 'right', font: {color: r.text || r.color}})),
-     xaxis: {title: 'Average total points (axis does not start at zero)', range: [lo - 20, hi + 30]}, yaxis: {automargin: true}, showlegend: false, margin: {t: 30, r: 40, b: 50, l: 200}});
+     xaxis: {title: 'Average total points', range: [lo - 20, hi + 30]}, yaxis: {automargin: true}, showlegend: false, margin: {t: 30, r: 40, b: 50, l: 200}});
   $('#' + id).style.height = Math.max(300, rows.length * 30 + 100) + 'px';
   Plotly.Plots.resize(id);
 }

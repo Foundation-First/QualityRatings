@@ -12,7 +12,7 @@
  <div class="card"><h3>Distribution of total points</h3><p>Interaction points (CLASS) plus curriculum points, one count per site.</p><div id="c-hist" class="chart"></div></div>
  <div class="card"><h3>Interaction points by site type</h3><p>Box = middle 50% of sites; line = median.</p><div id="c-box" class="chart"></div></div>
  <div class="card" style="grid-column:1/-1"><h3>Average score by locality</h3><p>Each dot is a locality's average total points (number of sites in parentheses). Paler dots have fewer than 5 sites, too few to read as the locality's overall result.</p><div id="c-county" class="chart"></div></div>
- <div class="card" style="grid-column:1/-1"><h3>Quality ratings by locality</h3><p>Number of sites at each rating level.</p><div class="tbl" id="t-county"></div></div>
+ <div class="card" style="grid-column:1/-1"><h3>Quality ratings by locality</h3><p>Number of sites at each rating level, with the share in parentheses.</p><div class="tbl" id="t-county"></div></div>
 </div></main>
 <script src="common.js"></script>
 <script>
@@ -35,7 +35,7 @@ function stacked(id, key, m, tid) {
     hovertemplate: `%{x}<br>${l.name}: %{customdata} sites` + (m === 'pct' ? ' (%{y:.0f}%)' : '') + '<extra></extra>'})),
     {barmode: 'stack', yaxis: {title: m === 'pct' ? '% of group' : 'Sites'}, xaxis: {tickangle: -25}, legend: {orientation: 'h', y: -0.5}, margin: {t: 10, r: 10, b: 130, l: 55}});
   // exact numbers (small groups such as Needs Support or Exceeds are too thin to read in the bars)
-  $('#' + tid).innerHTML = table(['Group', 'Sites', ...DESC.map(lvShort)], groups.map(g => [g, tot[g], ...DESC.map(i => counts[g][i])]));
+  $('#' + tid).innerHTML = table(['Group', 'Sites', ...DESC.map(lvHead)], groups.map(g => [g, tot[g], ...DESC.map(i => np(counts[g][i], tot[g]))]));
 }
 
 function draw() {
@@ -55,8 +55,8 @@ function draw() {
   F.forEach(s => (by[s.county] ??= []).push(s));
   dotRank('c-county', Object.entries(by).map(([k, v]) => ({name: k, label: k, v: mean(v.map(s => s.tp)), n: v.length})), tp.length ? [{x: mean(tp), label: 'Selection average', color: P.rrnc}] : []);
 
-  const trows = Object.keys(by).sort().map(k => { const l = by[k], lc = levelCounts(l); return [k, l.length, ...DESC.map(i => lc[i]), Math.round(mean(l.map(s => s.tp)))]; });
-  $('#t-county').innerHTML = table(['Locality', 'Sites', ...DESC.map(lvShort), 'Avg points'], trows);
+  const trows = Object.keys(by).sort().map(k => { const l = by[k], lc = levelCounts(l); return [k, l.length, ...DESC.map(i => np(lc[i], l.length)), Math.round(mean(l.map(s => s.tp)))]; });
+  $('#t-county').innerHTML = table(['Locality', 'Sites', ...DESC.map(lvHead), 'Avg<br>points'], trows);
 }
 init('overview', draw);
 </script></body></html>

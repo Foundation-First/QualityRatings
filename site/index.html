@@ -63,9 +63,9 @@ function draw() {
 
   // --- ratings by site type
   const typeL = Object.fromEntries(TYPES.map(t => [t, levelsFromBins(B.byType[t])]));
-  $('#t-type-level').innerHTML = table(['Site type', 'Sites', ...DESC.map(lvShort), 'Avg points'],
-    [...TYPES.map(t => [TSHORT[t], sum(typeL[t]), ...DESC.map(i => typeL[t][i]), Math.round(cur.byType[t].avg)]),
-     ['<b>All sites</b>', `<b>${n}</b>`, ...DESC.map(i => `<b>${curL[i]}</b>`), `<b>${Math.round(cur.avg)}</b>`]]);
+  $('#t-type-level').innerHTML = table(['Site type', 'Sites', ...DESC.map(lvHead), 'Avg<br>points'],
+    [...TYPES.map(t => [TSHORT[t], sum(typeL[t]), ...DESC.map(i => np(typeL[t][i], sum(typeL[t]))), Math.round(cur.byType[t].avg)]),
+     ['<b>All sites</b>', `<b>${n}</b>`, ...DESC.map(i => `<b>${np(curL[i], n)}</b>`), `<b>${Math.round(cur.avg)}</b>`]]);
   const best = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg);
   const av = t => Math.round(cur.byType[t].avg), gapO = Math.abs(cur.byType[best[1]].avg - cur.byType[best[2]].avg);
   $('#i-type').innerHTML = `<b>${TLABEL[best[0]]}</b> average ${av(best[0])} points. ` + (gapO < 10 ? `${TLABEL[best[1]]} (${av(best[1])}) and ${TLABEL[best[2]].toLowerCase()} (${av(best[2])}) are within ${Math.max(1, Math.round(gapO))} points of each other, too close to call a difference.` : `${TLABEL[best[1]]} average ${av(best[1])} and ${TLABEL[best[2]].toLowerCase()} ${av(best[2])}.`) + ` Site types are scored the same way but serve different children and settings, so compare them with care.`;
@@ -80,8 +80,11 @@ function draw() {
   const c3 = ALL.filter(s => s.hist['2024-25']?.tp != null && s.hist['2023-24']?.tp != null);
   const same = {'2023-24': mean(c3.map(s => s.hist['2023-24'].tp)), '2024-25': mean(c3.map(s => s.hist['2024-25'].tp)), '2025-26': mean(c3.map(s => s.tp))};
   const sameLine = {name: `RRNC, same ${c3.length} sites each year`, type: 'scatter', mode: 'lines+markers', x: YRS, y: YRS.map(y => same[y]), line: {color: P.greenDD, width: 2, dash: 'dash'}, marker: {size: 6}, hovertemplate: '%{x}: %{y:.1f} pts<extra>Same sites</extra>'};
-  const lRR = line('RRNC, all sites', nc, P.rrnc), lVA = line('Virginia, all sites', st, P.grey); lVA.textposition = 'bottom center';
-  plot('c-avg', [lRR, sameLine, lVA], {yaxis: {title: 'Average total points', range: [575, 610]}, annotations: [{text: 'Vertical axis starts at 575, not 0', x: 0, xref: 'paper', y: -0.42, yref: 'paper', showarrow: false, xanchor: 'left', font: {size: 11, color: '#5b6b78'}}], legend: {orientation: 'h', y: -0.28}});
+  // label positions chosen so the three lines' numbers never sit on top of each other
+  const lRR = line('RRNC, all sites', nc, P.rrnc), lVA = line('Virginia, all sites', st, P.grey);
+  lRR.textposition = ['bottom center', 'top center', 'bottom center']; lVA.textposition = 'bottom center';
+  sameLine.mode = 'lines+markers+text'; sameLine.text = YRS.map(y => Math.round(same[y])); sameLine.textposition = 'top center';
+  plot('c-avg', [lRR, sameLine, lVA], {yaxis: {title: 'Average total points', range: [575, 610]}, legend: {orientation: 'h', y: -0.28}});
   const gaps = YRS.map(y => Math.round(nc[y].avg - st[y].avg));
   $('#i-avg').innerHTML = `The RRNC all-site average moved ${YRS.map(y => Math.round(nc[y].avg)).join(' → ')} as sites joined and left VQB5. Among the <b>${c3.length} sites scored in all three years</b> (dashed line) it rose steadily, ${YRS.map(y => same[y].toFixed(1)).join(' → ')}, so the 2024-25 dip reflects which sites were in the data, not a decline at the same sites. RRNC has averaged ${gaps.map(g => Math.abs(g)).join(', ')} points ${gaps.every(g => g > 0) ? 'above' : 'from'} Virginia in these years, a small gap on an 800-point scale.`;
   const g = x => `<span style="color:var(--mute)">${Math.round(x)}</span>`;
@@ -90,13 +93,13 @@ function draw() {
      ['<b>All sites</b>', ...YRS.map(y => `<b>${Math.round(nc[y].avg)}</b>`), ...YRS.map(y => g(st[y].avg))]], 1, [['', 1], ['RRNC', 3], ['Virginia', 3]]);
 
   const yb = YRS.map(y => nc[y].bins), yn = yb.map(sum), yl = yb.map(levelsFromBins);
-  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2)), ...YRS.map(y => y.slice(2))],
-    [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => fmt(yl[k][i])), ...YRS.map((_, k) => pc(yl[k][i], yn[k]))]),
-     ['<b>Total</b>', ...yn.map(v => `<b>${fmt(v)}</b>`), ...YRS.map(() => '<b>100%</b>')]], 1, [['', 1], ['Sites', 3], ['Percent', 3]]);
+  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2))],
+    [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => np(yl[k][i], yn[k]))]),
+     ['<b>Total</b>', ...yn.map(v => `<b>${fmt(v)}</b>`)]]);
 
   sankeyLevels('c-levels', ALL);
   const mv = sankeyLevels.lastMoved;
-  $('#i-sankey').innerHTML = `Between consecutive years, <b>${pc(mv.total - mv.changed, mv.total)}</b> of rated site-years stayed at the same level and <b>${pc(mv.changed, mv.total)}</b> changed level. With so many sites at one level, the Exceeds and Needs Support ribbons are thin; their counts are in the labels and in the table above.`;
+  $('#i-sankey').innerHTML = `Between consecutive years, <b>${pc(mv.total - mv.changed, mv.total)}</b> of rated site-years stayed at the same level and <b>${pc(mv.changed, mv.total)}</b> changed level. With so many sites at one level, the Exceeds Expectations and Needs Support ribbons are thin; their counts are in the labels and in the table above.`;
 
   // --- new vs returning
   const N = S.newSites, nl = levelsFromBins(N.newBins), retL = LEVELS.map((_, i) => curL[i] - nl[i]);
