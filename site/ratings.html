@@ -6,12 +6,12 @@
 <div class="kpis" id="kpis"></div>
 <div class="grid">
  <div class="card"><h3>Quality ratings by age group served</h3><p>How sites in each group are distributed across rating levels.</p>
-  <div class="row"><label>View<select class="viewsel" data-k="ages"></select></label></div><div id="c-ages" class="chart"></div></div>
+  <div class="row"><label>View<select class="viewsel" data-k="ages"></select></label></div><div id="c-ages" class="chart"></div><p style="margin:8px 0 4px">Exact numbers</p><div class="tbl" id="t-ages"></div></div>
  <div class="card"><h3>Quality ratings by site type</h3><p>Centers, public schools and family day homes.</p>
-  <div class="row"><label>View<select class="viewsel" data-k="type"></select></label></div><div id="c-type" class="chart"></div></div>
+  <div class="row"><label>View<select class="viewsel" data-k="type"></select></label></div><div id="c-type" class="chart"></div><p style="margin:8px 0 4px">Exact numbers</p><div class="tbl" id="t-type"></div></div>
  <div class="card"><h3>Distribution of total points</h3><p>Interaction points (CLASS) plus curriculum points, one count per site.</p><div id="c-hist" class="chart"></div></div>
  <div class="card"><h3>Interaction points by site type</h3><p>Box = middle 50% of sites; line = median.</p><div id="c-box" class="chart"></div></div>
- <div class="card" style="grid-column:1/-1"><h3>Average score by locality</h3><p>Average total points for the sites in each locality (number of sites in parentheses). Lighter bars have fewer than 5 sites.</p><div id="c-county" class="chart"></div></div>
+ <div class="card" style="grid-column:1/-1"><h3>Average score by locality</h3><p>Each dot is a locality's average total points (number of sites in parentheses). Paler dots have fewer than 5 sites, too few to read as the locality's overall result.</p><div id="c-county" class="chart"></div></div>
  <div class="card" style="grid-column:1/-1"><h3>Quality ratings by locality</h3><p>Number of sites at each rating level.</p><div class="tbl" id="t-county"></div></div>
 </div></main>
 <script src="common.js"></script>
@@ -24,15 +24,18 @@ document.querySelectorAll('.viewsel').forEach(sel => {
   sel.addEventListener('change', () => { view[sel.dataset.k] = sel.value; draw(); });
 });
 
-function stacked(id, key, m) {
+function stacked(id, key, m, tid) {
   const groups = [...new Set(FILTERED.map(s => s[key]))].sort();
   const counts = Object.fromEntries(groups.map(g => [g, levelCounts(FILTERED.filter(s => s[key] === g))]));
   const tot = Object.fromEntries(groups.map(g => [g, sum(counts[g])]));
-  plot(id, LEVELS.map((l, i) => ({name: l.name, type: 'bar', x: groups, marker: {color: l.color},
+  const lab = g => `${g} (n=${tot[g]})`;
+  plot(id, LEVELS.map((l, i) => ({name: l.name, type: 'bar', x: groups.map(lab), marker: {color: l.color},
     y: groups.map(g => m === 'pct' ? (tot[g] ? 100 * counts[g][i] / tot[g] : 0) : counts[g][i]), customdata: groups.map(g => counts[g][i]),
     text: groups.map(g => { const p = tot[g] ? 100 * counts[g][i] / tot[g] : 0; return m === 'pct' && p >= 8 ? Math.round(p) + '%' : ''; }), textposition: 'inside', insidetextfont: {color: l.text},
     hovertemplate: `%{x}<br>${l.name}: %{customdata} sites` + (m === 'pct' ? ' (%{y:.0f}%)' : '') + '<extra></extra>'})),
     {barmode: 'stack', yaxis: {title: m === 'pct' ? '% of group' : 'Sites'}, xaxis: {tickangle: -25}, legend: {orientation: 'h', y: -0.5}, margin: {t: 10, r: 10, b: 130, l: 55}});
+  // exact numbers (small groups such as Needs Support or Exceeds are too thin to read in the bars)
+  $('#' + tid).innerHTML = table(['Group', 'Sites', ...DESC.map(lvShort)], groups.map(g => [g, tot[g], ...DESC.map(i => counts[g][i])]));
 }
 
 function draw() {
@@ -40,23 +43,17 @@ function draw() {
   const L = levelCounts(F);
   $('#kpis').innerHTML = kpis([[fmt(n), 'sites in selection'], [tp.length ? Math.round(mean(tp)) : '–', 'average total points'],
     ...DESC.map(i => [fmt(L[i]), `${LEVELS[i].name} (${n ? pc(L[i], n) : '–'})`])]);
-  stacked('c-ages', 'ages', view.ages);
-  stacked('c-type', 'type', view.type);
+  stacked('c-ages', 'ages', view.ages, 't-ages');
+  stacked('c-type', 'type', view.type, 't-type');
 
-  plot('c-hist', [{type: 'histogram', x: tp, xbins: {size: 20}, marker: {color: P.blue}, hovertemplate: '%{x} pts: %{y} sites<extra></extra>'}],
+  plot('c-hist', [{type: 'histogram', x: tp, xbins: {size: 20}, marker: {color: P.rrnc}, hovertemplate: '%{x} pts: %{y} sites<extra></extra>'}],
     {xaxis: {title: 'Total points'}, yaxis: {title: 'Sites'}, bargap: 0.05, margin: {t: 10, r: 10, b: 50, l: 55}});
   plot('c-box', TYPES.map(t => ({type: 'box', name: TLABEL[t], y: F.filter(s => s.type === t && s.ip != null).map(s => s.ip), boxpoints: false, marker: {color: TCOLOR[t]}, line: {color: TCOLOR[t]}})),
     {yaxis: {title: 'Interaction points'}, showlegend: false, margin: {t: 10, r: 10, b: 50, l: 55}});
 
   const by = {};
   F.forEach(s => (by[s.county] ??= []).push(s));
-  const rows = Object.entries(by).map(([k, v]) => [k, mean(v.map(s => s.tp)), v.length]).sort((a, b) => a[1] - b[1]);
-  plot('c-county', [{type: 'bar', orientation: 'h', y: rows.map(r => `${r[0]} (${r[2]})`), x: rows.map(r => r[1]), customdata: rows.map(r => r[2]),
-    marker: {color: P.blue, opacity: rows.map(r => r[2] < 5 ? 0.45 : 1)}, text: rows.map(r => Math.round(r[1])), textposition: 'outside', cliponaxis: false,
-    hovertemplate: '%{y}<br>Average: %{x:.0f} points<extra></extra>'}],
-    {xaxis: {title: 'Average total points', range: [Math.min(500, ...rows.map(r => r[1])) - 10, Math.max(660, ...rows.map(r => r[1])) + 25]}, showlegend: false, margin: {t: 10, r: 40, b: 50, l: 200}});
-  $('#c-county').style.height = Math.max(300, rows.length * 28 + 80) + 'px';
-  Plotly.Plots.resize('c-county');
+  dotRank('c-county', Object.entries(by).map(([k, v]) => ({name: k, label: k, v: mean(v.map(s => s.tp)), n: v.length})), tp.length ? [{x: mean(tp), label: 'Selection average', color: P.rrnc}] : []);
 
   const trows = Object.keys(by).sort().map(k => { const l = by[k], lc = levelCounts(l); return [k, l.length, ...DESC.map(i => lc[i]), Math.round(mean(l.map(s => s.tp)))]; });
   $('#t-county').innerHTML = table(['Locality', 'Sites', ...DESC.map(lvShort), 'Avg points'], trows);

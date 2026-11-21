@@ -1,5 +1,9 @@
 // Shared data loading, filter bar, brand palette and chart helpers for all pages.
-const P = {blue: '#11689B', navy: '#0E3F66', green: '#99CA3C', greenD: '#6FA82B', orange: '#F7941D', grey: '#98999B', lightBlue: '#9CC3DB', ink: '#23323f', grid: '#e9eef2'};
+// One meaning per colour (so a colour never changes meaning between charts):
+//   green  = RRNC (our region / our sites)      grey   = Virginia (state benchmark)
+//   orange -> light blue -> blue = rating levels, low -> high (a blue/orange ramp stays distinguishable for red-green colour blindness)
+//   tan / slate / brown = site types             dark / light green = emphasis within RRNC data (e.g. new vs returning, fall vs spring)
+const P = {blue: '#11689B', navy: '#0E3F66', green: '#99CA3C', rrnc: '#6FA82B', greenD: '#6FA82B', greenDD: '#3E6B0F', greenL: '#B7D98A', orange: '#F7941D', grey: '#85888B', lightBlue: '#9CC3DB', ink: '#23323f', grid: '#e9eef2', tan: '#D9B98A', slate: '#6B7F91', brown: '#8A5A2B', absent: '#CFD4D9'};
 // ---- Rating scale -------------------------------------------------------------------------------------------
 // Total scores fall in five 100-point bands (the building block for every scale). A rating scale is a set of
 // levels, each a group of bands, ordered low -> high.
@@ -14,13 +18,13 @@ const SCHEMES = {
   three: {key: 'three', title: '3-level', groups: [[0], [1, 2, 3], [4]], levels: [
     {name: 'Needs Support', short: 'Needs Support', pts: '100-399', color: P.orange, text: '#23323f'},
     {name: 'Meets Expectations', short: 'Meets', pts: '400-699', color: P.lightBlue, text: '#23323f'},
-    {name: 'Exceeds Expectations', short: 'Exceeds', pts: '700-800', color: P.greenD, text: '#fff'}]},
+    {name: 'Exceeds Expectations', short: 'Exceeds', pts: '700-800', color: P.blue, text: '#fff'}]},
   five: {key: 'five', title: '5-level (preview)', groups: [[0], [1], [2], [3], [4]], levels: [
-    {name: '399 or less', short: '399 or less', pts: '100-399', color: P.orange, text: '#23323f'},
+    {name: '399 or less', short: '399 or less', pts: '100-399', color: '#F7941D', text: '#23323f'},
     {name: '400-499', short: '400-499', pts: '400-499', color: '#FBC77A', text: '#23323f'},
-    {name: '500-599', short: '500-599', pts: '500-599', color: P.lightBlue, text: '#23323f'},
-    {name: '600-699', short: '600-699', pts: '600-699', color: P.blue, text: '#fff'},
-    {name: '700-800', short: '700-800', pts: '700-800', color: P.greenD, text: '#fff'}]},
+    {name: '500-599', short: '500-599', pts: '500-599', color: '#BCD6E8', text: '#23323f'},
+    {name: '600-699', short: '600-699', pts: '600-699', color: '#6FA3C7', text: '#23323f'},
+    {name: '700-800', short: '700-800', pts: '700-800', color: '#11689B', text: '#fff'}]},
 };
 let scaleKey = 'three';
 try {
@@ -41,9 +45,8 @@ const TSHORT = {Center: 'Centers', 'Public School': 'Public schools', 'Family Da
 // A locality's school division. Counties are "<County> Public Schools"; these independent cities use their official division names (verify against VDOE if more localities are added).
 const DIST_OVERRIDE = {'Manassas': 'Manassas City Public Schools', 'Manassas Park': 'Manassas Park City Schools', 'Fredericksburg': 'Fredericksburg City Public Schools'};
 const distName = n => DIST_OVERRIDE[n] || `${n} Public Schools`;
-const TCOLOR = {Center: P.blue, 'Public School': '#6B7F91', 'Family Day Home': P.green};
-const AGE_COLOR = {Infant: P.green, Toddler: P.orange, 'Pre-K': P.blue};
-const css = n => ({'--accent': P.blue, '--meets': P.lightBlue, '--grid': P.grid, '--ink': P.ink, '--exceeds': P.greenD, '--needs': P.orange, '--mute': '#5b6b78'}[n]);
+const TCOLOR = {Center: P.tan, 'Public School': P.slate, 'Family Day Home': P.brown};
+const TTEXT = {Center: '#23323f', 'Public School': '#fff', 'Family Day Home': '#fff'};
 const $ = s => document.querySelector(s);
 const sum = a => a.reduce((x, y) => x + y, 0);
 const mean = a => a.length ? sum(a) / a.length : null;
@@ -52,7 +55,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&
 const pc = (v, n) => { if (!n) return '–'; const p = 100 * v / n; return p > 0 && p < 1 ? '<1%' : Math.round(p) + '%'; };
 // groups (optional): [[label, colspan], ...] draws a spanning header row above the column headings
 const table = (head, rows, numFrom = 1, groups) => `<table><thead>${groups ? `<tr class="grp">${groups.map(([l, n]) => `<th colspan="${n}">${l}</th>`).join('')}</tr>` : ''}<tr>${head.map((h, i) => `<th class="${i >= numFrom ? 'n' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i >= numFrom ? 'n' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-const kpis = items => items.map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${s}</span></div>`).join('');
+const kpis = items => items.map(([b, s, c]) => `<div class="kpi"${c ? ` style="border-top-color:${c}"` : ''}><b>${b}</b><span>${s}</span></div>`).join('');
 async function loadJSON(name) { return (await fetch('data/' + name + '.json')).json(); }
 
 let state = {};
@@ -109,6 +112,8 @@ function update() {
   FILTERED = ALL.filter(s => match(s));
   try { sessionStorage.setItem('vqb5f', JSON.stringify(state)); } catch (e) {}
   $('#count').textContent = `Showing ${FILTERED.length.toLocaleString()} of ${ALL.length.toLocaleString()} sites`;
+  const sn = $('#smalln');
+  if (sn) { sn.style.display = FILTERED.length < 20 ? '' : 'none'; sn.textContent = FILTERED.length ? `Small selection: only ${FILTERED.length} ${FILTERED.length === 1 ? 'site matches' : 'sites match'}. Averages and percentages for so few sites can swing widely; read them as examples, not as the typical result.` : 'No sites match these filters.'; }
   onChange();
 }
 
@@ -127,7 +132,7 @@ function plot(id, traces, layout = {}) {
 // Only sites still in the program in 2025-26 are in the source data, so earlier-year bars show those sites;
 // "Not yet rated" holds sites that joined later.
 function sankeyLevels(id, sites, years = ['2023-24', '2024-25', '2025-26']) {
-  const K = LEVELS.length, NR = K, NCOL = years.length, GREY = '#C3CAD1';
+  const K = LEVELS.length, NR = K, NCOL = years.length, GREY = '#CFD4D9';
   const tpOf = (s, y) => y === '2025-26' ? s.tp : s.hist?.[y]?.tp;
   const lvl = (s, y) => { const tp = tpOf(s, y); return tp == null ? NR : levelIdx(tp); };
   const cnt = years.map(() => Array(K + 1).fill(0)), flow = {};
@@ -151,23 +156,48 @@ function sankeyLevels(id, sites, years = ['2023-24', '2024-25', '2025-26']) {
       color[nid(c, l)] = colorOf(l); x[nid(c, l)] = xs[c]; y[nid(c, l)] = Math.min(0.97, Math.max(0.03, center));
     }
   }
-  const src = [], tgt = [], val = [], lcol = [], ltxt = [];
+  const src = [], tgt = [], val = [], lcol = [], ltxt = [], moved = {total: 0, changed: 0};
   Object.entries(flow).forEach(([k, v]) => {
     const [c, a, b] = k.split('|').map(Number);
     src.push(nid(c, a)); tgt.push(nid(c + 1, b)); val.push(v);
     const rgb = colorOf(a).replace('#', ''), r = parseInt(rgb.slice(0, 2), 16), g = parseInt(rgb.slice(2, 4), 16), bl = parseInt(rgb.slice(4, 6), 16);
-    lcol.push(`rgba(${r},${g},${bl},0.55)`);
+    lcol.push(`rgba(${r},${g},${bl},${a === NR ? 0.5 : 0.7})`);
+    if (a !== NR && b !== NR) { moved.total += v; if (a !== b) moved.changed += v; }
     ltxt.push(`${years[c]} ${a === NR ? 'Not yet rated' : LEVELS[a].name} → ${years[c + 1]} ${b === NR ? 'Not yet rated' : LEVELS[b].name}`);
   });
   const lay = {margin: {t: 30, r: 10, b: 10, l: 10}, paper_bgcolor: 'rgba(0,0,0,0)', font: {family: "'Nunito Sans',system-ui,sans-serif", color: P.ink, size: 12},
     annotations: years.map((yy, c) => ({text: `<b>${yy}</b>`, x: [0, 0.5, 1][c] ?? c / (NCOL - 1), xanchor: ['left', 'center', 'right'][c] ?? 'center', y: 1.06, yref: 'paper', showarrow: false, font: {size: 13}}))};
+  sankeyLevels.lastMoved = moved;
   Plotly.react(id, [{type: 'sankey', arrangement: 'fixed', node: {pad: 14, thickness: 18, line: {width: 0}, label, color, x, y, hovertemplate: '%{label}<extra></extra>'},
     link: {source: src, target: tgt, value: val, color: lcol, customdata: ltxt, hovertemplate: '%{customdata}: %{value} sites<extra></extra>'}}], lay, {displayModeBar: false, responsive: true});
 }
 
 // page: nav key; cb: draw function; opts.data = names of extra JSON files to load (as SUMMARY / CLASS); opts.filters=false hides filter bar
+// Give every chart a text description (card title + subtitle + key takeaway) for screen readers.
+function labelCharts() {
+  document.querySelectorAll('.chart').forEach(el => {
+    const card = el.closest('.card'); if (!card) return;
+    const t = [card.querySelector('h3')?.textContent, card.querySelector(':scope > p')?.textContent, card.querySelector('.insight')?.textContent].filter(Boolean).map(x => x.trim().replace(/\.$/, '')).join('. ');
+    el.setAttribute('role', 'img'); el.setAttribute('aria-label', `Chart: ${t}. Hover or tap the chart for exact values.`);
+  });
+}
+
+// Ranking as a dot plot (dots need no zero baseline, unlike bars). rows: [{name, label, v, n}], refs: [{x, label, color, dash}]
+function dotRank(id, rows, refs, highlight) {
+  const sorted = [...rows].sort((a, b) => a.v - b.v), vals = [...rows.map(r => r.v), ...refs.map(r => r.x)];
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+  plot(id, [{type: 'scatter', mode: 'markers+text', x: sorted.map(r => r.v), y: sorted.map(r => `${r.label} (${r.n} ${r.n === 1 ? 'site' : 'sites'})`), text: sorted.map(r => Math.round(r.v)), textposition: 'middle right', cliponaxis: false,
+    marker: {size: sorted.map(r => r.n < 5 ? 9 : 13), color: sorted.map(r => r.name === highlight ? P.ink : P.rrnc), opacity: sorted.map(r => r.n < 5 ? 0.45 : 1), line: {width: 1.5, color: '#fff'}},
+    hovertemplate: '%{y}<br>Average: %{x:.0f} points<extra></extra>'}],
+    {shapes: refs.map(r => ({type: 'line', x0: r.x, x1: r.x, y0: 0, y1: 1, yref: 'paper', line: {color: r.color, dash: r.dash || 'dash', width: 2}})),
+     annotations: refs.map((r, i) => ({x: r.x, y: 1.04, yref: 'paper', text: `${r.label} ${Math.round(r.x)}`, showarrow: false, xanchor: i ? 'left' : 'right', font: {color: r.text || r.color}})),
+     xaxis: {title: 'Average total points (axis does not start at zero)', range: [lo - 20, hi + 30]}, yaxis: {automargin: true}, showlegend: false, margin: {t: 30, r: 40, b: 50, l: 200}});
+  $('#' + id).style.height = Math.max(300, rows.length * 30 + 100) + 'px';
+  Plotly.Plots.resize(id);
+}
+
 async function init(page, cb, opts = {}) {
-  onChange = cb;
+  onChange = () => { cb(); labelCharts(); };
   document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.dataset.p === page));
   if (opts.summary) SUMMARY = await loadJSON('summary');
   if (opts.class) CLASS = await loadJSON('class');
@@ -175,9 +205,10 @@ async function init(page, cb, opts = {}) {
   if (opts.filters === false) {
     $('#filters').remove();
     if (opts.sites) { DATA = await loadJSON('sites'); ALL = DATA.sites; }
-    cb(); return;
+    onChange(); return;
   }
   buildFilters();
+  $('#ftoggle').addEventListener('click', e => { const o = $('#filters').classList.toggle('open'); e.target.textContent = o ? 'Hide filters' : 'Show filters'; e.target.setAttribute('aria-expanded', o); });
   DATA = await loadJSON('sites');
   ALL = DATA.sites;
   update();
@@ -188,7 +219,7 @@ const NAV = `<div class="stripe"></div><header><div class="wrap">
 <div class="logos"><img class="rr" src="img/rrnc-logo.png" alt="Ready Region North Central" style="height:52px"></div></div>
 <nav><a data-p="summary" href="index.html">Summary</a><a data-p="compare" href="compare.html">Compare levels</a><a data-p="class" href="class.html">CLASS observations</a><a data-p="overview" href="ratings.html">Explore ratings</a>
 <a data-p="trends" href="trends.html">Trends</a><a data-p="programs" href="programs.html">Curriculum &amp; funding</a></nav></div></header>
-<div id="filters"><div class="wrap"><div class="bar"><b>Filter these charts</b><span id="count"></span></div><div class="grid-f"></div></div></div>`;
+<div id="filters"><div class="wrap"><div class="bar"><b>Filter these charts</b><span id="count"></span><button id="ftoggle" type="button" aria-expanded="false">Show filters</button></div><div class="grid-f"></div><div id="smalln" class="smalln" role="status" style="display:none"></div></div></div>`;
 const FOOT = `<footer class="wrap">Source: <a href="https://earlychildhoodquality.doe.virginia.gov/quality-ratings/">Virginia Department of Education VQB5 Quality Rating Data</a> (2023-24 to 2025-26) and Ready Region North Central CLASS and coaching summaries. Statewide figures are aggregates shown for comparison. This is an independent visualization; VDOE's published data is the official record.</footer>`;
 document.head.insertAdjacentHTML('beforeend', '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap">');
 document.body.insertAdjacentHTML('afterbegin', NAV);

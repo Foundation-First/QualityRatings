@@ -1,5 +1,5 @@
 /* Foundation First palette (sampled from the FF / Ready Region logos) */
-:root{
+:root{--rrnc:#6FA82B;
   --blue:#11689B;--navy:#0E3F66;--rrnc:#135695;--green:#99CA3C;--green-d:#5F8F1B;--orange:#F7941D;--orange-d:#B5620A;
   --grey:#98999B;--ink:#23323f;--mute:#5b6b78;--line:#dde4ea;--bg:#f3f7fa;--card:#fff;--tint:#e8f1f7;--grid:#e9eef2;
 }
@@ -37,7 +37,7 @@ main{padding:20px 0 40px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin:0 0 18px}
 .hero ~ main .kpis{margin-top:-22px}
 .kpi,.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;box-shadow:0 1px 2px rgba(14,63,102,.05)}
-.kpi{border-top:4px solid var(--green)}.kpi:nth-child(3n+2){border-top-color:var(--blue)}.kpi:nth-child(3n){border-top-color:var(--orange)}
+.kpi{border-top:4px solid var(--rrnc)}
 .kpi b{display:block;font-size:30px;line-height:1.15;color:var(--navy);font-weight:800}
 .kpi span{color:var(--mute);font-size:13px;font-weight:600}
 .plain-kpis{margin-top:0}
@@ -72,3 +72,12 @@ footer{color:var(--mute);font-size:13px;padding:0 0 34px}
 @media print{#filters,nav,.seg{display:none}body{background:#fff}.card,.kpi{box-shadow:none}}
 
 .preview-banner{background:#fff4e0;border-bottom:1px solid #f3d29a;color:#7a4300;font-size:13px;padding:7px 0}.preview-banner a{color:#7a4300;font-weight:800}
+
+.smalln{background:#eef3f7;border-left:4px solid var(--navy);color:var(--ink);font-size:13px;padding:7px 12px;margin:0 0 12px;border-radius:0 8px 8px 0}
+#ftoggle{display:none}
+@media(max-width:640px){
+  .kpis{grid-template-columns:repeat(2,1fr)}.kpi{padding:12px}.kpi b{font-size:24px}
+  nav{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch}nav a{white-space:nowrap}
+  #ftoggle{display:inline-block}#filters .grid-f{display:none}#filters.open .grid-f{display:grid}
+}
+.tbl{background:linear-gradient(to right,#fff 30%,rgba(255,255,255,0)),linear-gradient(to right,rgba(255,255,255,0),#fff 70%) 100% 0,radial-gradient(farthest-side at 0 50%,rgba(14,63,102,.22),rgba(0,0,0,0)),radial-gradient(farthest-side at 100% 50%,rgba(14,63,102,.22),rgba(0,0,0,0)) 100% 0;background-repeat:no-repeat;background-size:40px 100%,40px 100%,14px 100%,14px 100%;background-attachment:local,local,scroll,scroll}

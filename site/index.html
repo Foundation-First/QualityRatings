@@ -18,7 +18,7 @@
  <div class="card"><h3>Average total points</h3><p>RRNC average vs. statewide average.</p><div id="c-avg" class="chart short"></div><div class="insight" id="i-avg"></div></div>
  <div class="card"><h3>Average points by site type</h3><p>RRNC and Virginia, by program year.</p><div class="tbl" id="t-type"></div></div>
  <div class="card"><h3>Quality ratings over time</h3><p>Number and percent of RRNC sites at each rating level (all sites rated that year).</p><div class="tbl" id="t-levels"></div></div>
- <div class="card" style="grid-column:1/-1"><h3>Sites at each rating level, by year</h3><p>Each bar is a rating level and each ribbon follows sites from one year to the next. Shows the sites rated in 2025-26, so earlier-year counts can be lower than in the table above (sites that have since left VQB5 are not in the data). Sites that joined later start in the grey “Not yet rated” bar.</p><div id="c-levels" class="chart" style="height:430px"></div></div>
+ <div class="card" style="grid-column:1/-1"><h3>Sites at each rating level, by year</h3><p>Each bar is a rating level and each ribbon follows sites from one year to the next. Shows the sites rated in 2025-26, so earlier-year counts can be lower than in the table above (sites that have since left VQB5 are not in the data). Sites that joined later start in the grey “Not yet rated” bar.</p><div id="c-levels" class="chart" style="height:430px"></div><div class="insight" id="i-sankey"></div></div>
 </div></section>
 
 <section><h2>New and returning sites</h2><p class="lead">RRNC provides case management to help new sites get started with VQB5. This section describes where new sites scored; it does not measure the effect of that support.</p>
@@ -57,7 +57,7 @@ function draw() {
   $('#kpis').innerHTML = kpis([
     [fmt(n), 'sites rated in 2025-26'],
     [`${Math.round(cur.avg)}`, `average total points (state ${Math.round(st['2025-26'].avg)})`],
-    ...DESC.map(i => [fmt(curL[i]), `${LEVELS[i].name} (${pc(curL[i], n)})`]),
+    ...DESC.map(i => [fmt(curL[i]), `${LEVELS[i].name} (${pc(curL[i], n)})`, LEVELS[i].color]),
     [fmt(honorTotal), `sites on an Honor Roll (${pc(honorTotal, n)})`],
   ]);
 
@@ -79,8 +79,8 @@ function draw() {
   const line = (name, d, col) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y: YRS.map(y => d[y].avg), text: YRS.map(y => Math.round(d[y].avg)), textposition: 'top center', line: {color: col, width: 3}, marker: {size: 8}, hovertemplate: `%{x}: %{y:.0f} pts<extra>${name}</extra>`});
   const c3 = ALL.filter(s => s.hist['2024-25']?.tp != null && s.hist['2023-24']?.tp != null);
   const same = {'2023-24': mean(c3.map(s => s.hist['2023-24'].tp)), '2024-25': mean(c3.map(s => s.hist['2024-25'].tp)), '2025-26': mean(c3.map(s => s.tp))};
-  const sameLine = {name: `RRNC, same ${c3.length} sites each year`, type: 'scatter', mode: 'lines+markers', x: YRS, y: YRS.map(y => same[y]), line: {color: P.blue, width: 2, dash: 'dash'}, marker: {size: 6}, hovertemplate: '%{x}: %{y:.1f} pts<extra>Same sites</extra>'};
-  const lRR = line('RRNC, all sites', nc, P.blue), lVA = line('Virginia, all sites', st, P.grey); lVA.textposition = 'bottom center';
+  const sameLine = {name: `RRNC, same ${c3.length} sites each year`, type: 'scatter', mode: 'lines+markers', x: YRS, y: YRS.map(y => same[y]), line: {color: P.greenDD, width: 2, dash: 'dash'}, marker: {size: 6}, hovertemplate: '%{x}: %{y:.1f} pts<extra>Same sites</extra>'};
+  const lRR = line('RRNC, all sites', nc, P.rrnc), lVA = line('Virginia, all sites', st, P.grey); lVA.textposition = 'bottom center';
   plot('c-avg', [lRR, sameLine, lVA], {yaxis: {title: 'Average total points', range: [575, 610]}, annotations: [{text: 'Vertical axis starts at 575, not 0', x: 0, xref: 'paper', y: -0.42, yref: 'paper', showarrow: false, xanchor: 'left', font: {size: 11, color: '#5b6b78'}}], legend: {orientation: 'h', y: -0.28}});
   const gaps = YRS.map(y => Math.round(nc[y].avg - st[y].avg));
   $('#i-avg').innerHTML = `The RRNC all-site average moved ${YRS.map(y => Math.round(nc[y].avg)).join(' → ')} as sites joined and left VQB5. Among the <b>${c3.length} sites scored in all three years</b> (dashed line) it rose steadily, ${YRS.map(y => same[y].toFixed(1)).join(' → ')}, so the 2024-25 dip reflects which sites were in the data, not a decline at the same sites. RRNC has averaged ${gaps.map(g => Math.abs(g)).join(', ')} points ${gaps.every(g => g > 0) ? 'above' : 'from'} Virginia in these years, a small gap on an 800-point scale.`;
@@ -95,12 +95,14 @@ function draw() {
      ['<b>Total</b>', ...yn.map(v => `<b>${fmt(v)}</b>`), ...YRS.map(() => '<b>100%</b>')]], 1, [['', 1], ['Sites', 3], ['Percent', 3]]);
 
   sankeyLevels('c-levels', ALL);
+  const mv = sankeyLevels.lastMoved;
+  $('#i-sankey').innerHTML = `Between consecutive years, <b>${pc(mv.total - mv.changed, mv.total)}</b> of rated site-years stayed at the same level and <b>${pc(mv.changed, mv.total)}</b> changed level. With so many sites at one level, the Exceeds and Needs Support ribbons are thin; their counts are in the labels and in the table above.`;
 
   // --- new vs returning
   const N = S.newSites, nl = levelsFromBins(N.newBins), retL = LEVELS.map((_, i) => curL[i] - nl[i]);
   const sh = (a, nn) => a.map(v => 100 * v / nn);
-  plot('c-new', [{name: `New sites (${N.n})`, type: 'bar', x: LEVELS.map(l => l.short), y: sh(nl, N.n), marker: {color: P.orange}, customdata: nl, text: sh(nl, N.n).map(v => v >= 1 ? Math.round(v) + '%' : ''), textposition: 'outside', cliponaxis: false, hovertemplate: '%{x}: %{customdata} new sites (%{y:.0f}%)<extra></extra>'},
-                 {name: `Returning sites (${N.nReturning})`, type: 'bar', x: LEVELS.map(l => l.short), y: sh(retL, N.nReturning), marker: {color: P.blue}, customdata: retL, text: sh(retL, N.nReturning).map(v => v >= 1 ? Math.round(v) + '%' : ''), textposition: 'outside', cliponaxis: false, hovertemplate: '%{x}: %{customdata} returning sites (%{y:.0f}%)<extra></extra>'}],
+  plot('c-new', [{name: `New sites (${N.n})`, type: 'bar', x: LEVELS.map(l => l.short), y: sh(nl, N.n), marker: {color: P.greenDD}, customdata: nl, text: sh(nl, N.n).map(v => v >= 1 ? Math.round(v) + '%' : ''), textposition: 'outside', cliponaxis: false, hovertemplate: '%{x}: %{customdata} new sites (%{y:.0f}%)<extra></extra>'},
+                 {name: `Returning sites (${N.nReturning})`, type: 'bar', x: LEVELS.map(l => l.short), y: sh(retL, N.nReturning), marker: {color: P.greenL}, customdata: retL, text: sh(retL, N.nReturning).map(v => v >= 1 ? Math.round(v) + '%' : ''), textposition: 'outside', cliponaxis: false, hovertemplate: '%{x}: %{customdata} returning sites (%{y:.0f}%)<extra></extra>'}],
     {barmode: 'group', xaxis: {title: 'Rating level'}, yaxis: {title: '% of group', range: [0, 115]}});
   $('#i-new').innerHTML = `New sites by level: ` + DESC.map(i => `<b>${nl[i]}</b> ${LEVELS[i].name}`).join(', ') + `. New sites averaged <b>${Math.round(N.avgNew)}</b> points, ${Math.round(N.avgReturning - N.avgNew)} below returning sites (<b>${Math.round(N.avgReturning)}</b>).`;
   $('#t-new').innerHTML = kpis([[N.n, 'new sites observed'], ...TYPES.map(t => [N.byType[t], 'new ' + TLABEL[t].toLowerCase()])]).replace(/class="kpi"/g, 'class="kpi" style="margin-bottom:10px"') + `<p class="note">Returning sites: ${N.nReturning}.</p>`;

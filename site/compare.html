@@ -37,7 +37,9 @@
 </main>
 <script src="common.js"></script>
 <script>
-const LV = {site: {color: P.orange, short: 'Site'}, dist: {color: P.greenD, short: 'School district'}, loc: {color: '#2A9D8F', short: 'Locality'}, region: {color: P.blue, short: 'Region'}, state: {color: P.grey, short: 'Virginia'}};
+// Entity colours: dark ink = the site, greens = RRNC data (darker = more specific), grey = Virginia. Line styles differ too, so colour is never the only cue.
+const LV = {site: {color: P.ink, text: P.ink, short: 'Site', dash: 'solid', w: 4}, dist: {color: P.greenDD, text: P.greenDD, short: 'School district', dash: 'solid', w: 3},
+  loc: {color: P.greenL, text: '#5E8A1A', short: 'Locality', dash: 'dashdot', w: 3}, region: {color: P.rrnc, text: '#4F8A12', short: 'Region', dash: 'dash', w: 3}, state: {color: P.grey, text: '#666', short: 'Virginia', dash: 'dot', w: 3}};
 const ord = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
 const ordP = p => p == null ? '–' : ord(p);
 const f0 = v => v == null ? '–' : Math.round(v).toLocaleString();
@@ -161,9 +163,8 @@ function draw() {
 
   // Distribution with level markers
   const S = levels[levels.length - 1], xs = S.hist.map((_, i) => S.start + i * S.step + S.step / 2);
-  const dark = c => c === P.green ? P.greenD : c === P.grey ? '#666' : c;
-  const shapes = levels.map(l => ({type: 'line', x0: l.tp, x1: l.tp, y0: 0, y1: 1, yref: 'paper', line: {color: LV[l.k].color, width: l.k === 'site' ? 4 : 3, dash: l.k === 'state' ? 'dot' : 'solid'}}));
-  const anns = levels.map((l, i) => ({x: l.tp, y: 1 - i * 0.09, yref: 'paper', xanchor: l.tp > 640 ? 'right' : 'left', xshift: l.tp > 640 ? -6 : 6, showarrow: false, text: `<b>${LV[l.k].short}: ${f0(l.tp)}</b>`, font: {color: dark(LV[l.k].color)}}));
+  const shapes = levels.map(l => ({type: 'line', x0: l.tp, x1: l.tp, y0: 0, y1: 1, yref: 'paper', line: {color: LV[l.k].color, width: LV[l.k].w, dash: LV[l.k].dash}}));
+  const anns = levels.map((l, i) => ({x: l.tp, y: 1 - i * 0.09, yref: 'paper', xanchor: l.tp > 640 ? 'right' : 'left', xshift: l.tp > 640 ? -6 : 6, showarrow: false, text: `<b>${LV[l.k].short}: ${f0(l.tp)}</b>`, font: {color: LV[l.k].text}}));
   plot('c-dist', [{type: 'bar', x: xs, y: S.hist.map(v => 100 * v / S.n), marker: {color: '#d5dde4'}, width: S.step * 0.95, hovertemplate: '%{x:.0f} pts: %{y:.1f}% of Virginia ' + sName + '<extra></extra>'}],
     {shapes, annotations: anns, xaxis: {title: 'Total rating points', range: [480, 740]}, yaxis: {title: `% of Virginia ${sName}`}, showlegend: false, margin: {t: 10, r: 12, b: 50, l: 55}, bargap: 0});
   $('#p-dist').textContent = `Grey bars show every Virginia site${regionType ? ' of this type' : ''}; lines mark the average for each level.`;
@@ -185,31 +186,24 @@ function draw() {
   const rows = [
     ['Sites', ...levels.map(l => fmt(l.n))],
     ['Average total points', ...levels.map(l => `<b>${f0(l.tp)}</b>`)],
-    ['Average interaction points (CLASS)', ...levels.map(l => f0(l.ip))],
-    ['Average curriculum points', ...levels.map(l => f0(l.cp))],
+    ['Average interaction points (CLASS score × 100)', ...levels.map(l => f0(l.ip))],
+    ['Sites using an approved curriculum', ...levels.map(l => l.k === 'site' ? yes(site.cp >= 100) : f0(l.cp) + '%')],
     ...DESC.map(i => [LEVELS[i].name + (LEVELS[i].name === LEVELS[i].pts ? '' : ` (${LEVELS[i].pts.replace('-', '–')})`), ...levels.map(l => l.k === 'site' ? yes(levelIdx(site.tp) === i) : pc(levelsFromBins(l.bins)[i], sum(l.bins)))]),
   ];
   if (site) rows.push(["Site's percentile in this group", ...levels.map(l => l.k === 'site' ? '–' : ordP(pctOf(l)))]);
-  $('#t-compare').innerHTML = table(['', ...levels.map(l => `<span style="color:${dark(LV[l.k].color)}">●</span> ${LV[l.k].short}`)], rows);
+  $('#t-compare').innerHTML = table(['', ...levels.map(l => `<span style="color:${LV[l.k].color}">●</span> ${LV[l.k].short}`)], rows);
   $('#n-compare').textContent = `Region and Virginia columns include ${sName}. Points are 2025-26 VQB5 rating points (100–800). ` + (site ? 'Percentile = share of the group scoring below this site (ties count half). ' : '') + 'Averages for very small groups can swing widely.';
 
-  // Ranking: school districts (public schools) or localities
+  // Ranking: school districts (public schools) or localities, as a dot plot
   const isDist = kind === 'dist';
   const rankType = isDist ? PS : (site ? wt : (ui.type || wt));
   const by = {};
   ALL.filter(typeOK(rankType)).forEach(s => (by[s.county] ??= []).push(s));
-  const rk = Object.entries(by).map(([k, v]) => [k, mean(v.map(s => s.tp)), v.length]).sort((a, b) => a[1] - b[1]);
+  const rankRows = Object.entries(by).map(([k, v]) => ({name: k, label: isDist ? distName(k) : k, v: mean(v.map(s => s.tp)), n: v.length}));
   const regAvg = stats(ALL.filter(typeOK(rankType))).tp, stAvg = stateStats(rankType).tp;
   $('#h-rank').textContent = isDist ? 'How school districts compare' : 'How localities compare';
-  $('#l-rank').textContent = (isDist ? 'Average total points for public schools in each school district. ' : `Average total points by locality for ${rankType ? TLABEL[rankType].toLowerCase() : 'sites of all types'}. `) + 'Hover for the number of sites; lighter bars have fewer than 5 sites, so treat them with caution.';
-  plot('c-rank', [{type: 'bar', orientation: 'h', y: rk.map(r => `${isDist ? distName(r[0]) : r[0]} (${r[2]})`), x: rk.map(r => r[1]), customdata: rk.map(r => r[2]),
-      marker: {color: rk.map(r => r[0] === name ? P.greenD : P.blue), opacity: rk.map(r => r[2] < 5 ? 0.45 : 1)}, text: rk.map(r => f0(r[1])), textposition: 'outside', cliponaxis: false,
-      hovertemplate: '%{y}<br>Average: %{x:.0f} points (%{customdata} sites)<extra></extra>'}],
-    {shapes: [{type: 'line', x0: regAvg, x1: regAvg, y0: 0, y1: 1, yref: 'paper', line: {color: P.blue, dash: 'dash', width: 2}}, {type: 'line', x0: stAvg, x1: stAvg, y0: 0, y1: 1, yref: 'paper', line: {color: P.grey, dash: 'dot', width: 2}}],
-     annotations: [{x: regAvg, y: 1.02, yref: 'paper', text: 'Region ' + f0(regAvg), showarrow: false, xanchor: 'right', font: {color: P.blue}}, {x: stAvg, y: 1.02, yref: 'paper', text: 'Virginia ' + f0(stAvg), showarrow: false, xanchor: 'left', font: {color: '#666'}}],
-     xaxis: {title: 'Average total points', range: [Math.min(500, ...rk.map(r => r[1])) - 10, Math.max(700, ...rk.map(r => r[1])) + 25]}, margin: {t: 26, r: 40, b: 50, l: isDist ? 290 : 200}, showlegend: false});
-  $('#c-rank').style.height = Math.max(320, rk.length * 24 + 80) + 'px';
-  Plotly.Plots.resize('c-rank');
+  $('#l-rank').textContent = (isDist ? 'Average total points for public-school sites in each school division (pre-K and birth-to-five programs only). ' : `Average total points by locality for ${rankType ? TLABEL[rankType].toLowerCase() : 'sites of all types'}. `) + 'Paler dots have fewer than 5 sites and are too few to read as the group’s overall result.';
+  dotRank('c-rank', rankRows, [{x: regAvg, label: 'Region', color: P.rrnc, text: '#4F8A12'}, {x: stAvg, label: 'Virginia', color: P.grey, dash: 'dot', text: '#666'}], name);
 }
 
 init('compare', () => { readHash(); setupControls(); draw(); window.addEventListener('hashchange', () => { readHash(); draw(); }); }, {filters: false, sites: true, bench: true});
