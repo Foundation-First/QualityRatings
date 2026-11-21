@@ -5,11 +5,10 @@
 <body><main class="wrap"><section><h2>Trends since 2023-24</h2><p class="lead">See how the sites in your selection have moved over three program years. Filters apply here too.</p></section>
 <p class="note">Trends use the sites in your filtered selection that were also scored in earlier years (matched by site, as published in the 2025-26 file). Sites that closed or left VQB5 before 2025-26 are not in the source file, so these are continuing sites only.</p>
 <div class="grid">
- <div class="card"><h3>Score ranges by year</h3><p>Share of sites in each 100-point range, for sites scored in all three years.</p><div id="c-mix" class="chart"></div></div>
- <div class="card"><h3>Quality ratings by year</h3><p>Number of continuing sites at each rating level.</p><div class="tbl" id="t-levels"></div></div>
+ <div class="card"><h3>Quality ratings by year</h3><p>Share of continuing sites at each rating level.</p><div id="c-mix" class="chart"></div></div>
+ <div class="card"><h3>Quality ratings by year (numbers)</h3><p>Number and percent of continuing sites at each rating level.</p><div class="tbl" id="t-levels"></div></div>
  <div class="card"><h3>Average points by year</h3><p>Same continuing sites; lines show average total and interaction points.</p><div id="c-pts" class="chart"></div></div>
- <div class="card"><h3>Movement between score ranges, 2024-25 → 2025-26</h3><p>Each cell is the number of sites that moved from the row range (last year) to the column range (this year). Cells on the diagonal stayed in the same range.</p><div id="c-flow" class="chart"></div><div class="insight" id="i-flow"></div></div>
- <div class="card"><h3>Movement between rating levels, 2024-25 → 2025-26</h3><p>Each cell is the number of sites that moved from the row rating (last year) to the column rating (this year).</p><div id="c-flow3" class="chart short"></div></div>
+ <div class="card"><h3>Movement between rating levels, 2024-25 → 2025-26</h3><p>Each cell is the number of sites that moved from the row rating (last year) to the column rating (this year). Cells on the diagonal stayed at the same level.</p><div id="c-flow" class="chart"></div><div class="insight" id="i-flow"></div></div>
  <div class="card"><h3>Change in interaction points, 2024-25 → 2025-26</h3><p>Positive = score went up. One count per site.</p><div id="c-delta" class="chart"></div></div>
 </div></main>
 <script src="common.js"></script>
@@ -18,13 +17,11 @@ const YRS = ['2023-24', '2024-25', '2025-26'];
 const get = (s, y) => y === '2025-26' ? {ip: s.ip, tp: s.tp} : s.hist[y];
 function draw() {
   const all3 = FILTERED.filter(s => YRS.every(y => get(s, y)?.tp != null));
-  const cnt = YRS.map(y => RANGES.map((_, i) => all3.filter(s => rangeIdx(get(s, y).tp) === i).length));
-  plot('c-mix', RANGES.map((r, i) => ({name: r, type: 'bar', x: YRS, marker: {color: RANGE_COLORS[i]}, y: YRS.map((_, k) => all3.length ? 100 * cnt[k][i] / all3.length : 0), customdata: YRS.map((_, k) => cnt[k][i]),
-    text: YRS.map((_, k) => { const p = all3.length ? 100 * cnt[k][i] / all3.length : 0; return p >= 6 ? Math.round(p) + '%' : ''; }), textposition: 'inside', insidetextfont: {color: RANGE_TEXT[i]},
-    hovertemplate: `%{x}<br>${r} points: %{customdata} sites (%{y:.1f}%)<extra></extra>`})),
-    {barmode: 'stack', yaxis: {title: '% of sites', range: [0, 100]}, legend: {orientation: 'h', y: -0.28, title: {text: 'Points: '}}, annotations: [{text: `n = ${all3.length} sites`, x: 1, y: 1.05, xref: 'paper', yref: 'paper', showarrow: false}]});
-
   const lv = YRS.map(y => LEVELS.map((_, i) => all3.filter(s => levelIdx(get(s, y).tp) === i).length));
+  plot('c-mix', LEVELS.map((l, i) => ({name: l.name, type: 'bar', x: YRS, marker: {color: l.color}, y: YRS.map((_, k) => all3.length ? 100 * lv[k][i] / all3.length : 0), customdata: YRS.map((_, k) => lv[k][i]),
+    text: YRS.map((_, k) => { const p = all3.length ? 100 * lv[k][i] / all3.length : 0; return p >= 6 ? Math.round(p) + '%' : ''; }), textposition: 'inside', insidetextfont: {color: l.text},
+    hovertemplate: `%{x}<br>${l.name}: %{customdata} sites (%{y:.1f}%)<extra></extra>`})),
+    {barmode: 'stack', yaxis: {title: '% of sites', range: [0, 100]}, legend: {orientation: 'h', y: -0.28}, annotations: [{text: `n = ${all3.length} sites`, x: 1, y: 1.05, xref: 'paper', yref: 'paper', showarrow: false}]});
   $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2)), ...YRS.map(y => y.slice(2))],
     [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => lv[k][i]), ...YRS.map((_, k) => pc(lv[k][i], all3.length))]), ['<b>Total</b>', ...YRS.map(() => `<b>${all3.length}</b>`), ...YRS.map(() => '<b>100%</b>')]], 1, [['', 1], ['Sites', 3], ['Percent', 3]]);
 
@@ -32,17 +29,12 @@ function draw() {
   plot('c-pts', [line('tp', 'Total points', P.blue), line('ip', 'Interaction points', P.green)], {yaxis: {title: 'Average points'}});
 
   const both = FILTERED.filter(s => s.hist['2024-25']?.tp != null && s.tp != null);
-  const z = RANGES.map((_, a) => RANGES.map((_, b) => both.filter(s => rangeIdx(s.hist['2024-25'].tp) === a && rangeIdx(s.tp) === b).length));
-  plot('c-flow', [{type: 'heatmap', x: RANGES, y: RANGES, z, colorscale: [[0, '#f1f6fa'], [1, P.blue]], showscale: false, text: z.map(r => r.map(String)), texttemplate: '%{text}',
-    hovertemplate: '2024-25 %{y} → 2025-26 %{x}: %{z} sites<extra></extra>'}],
-    {xaxis: {title: '2025-26 score range', side: 'bottom'}, yaxis: {title: '2024-25 score range', autorange: 'reversed'}, margin: {t: 10, r: 10, b: 60, l: 100}});
-  const tot = sum(z.flat()), same = sum(RANGES.map((_, i) => z[i][i])), up = sum(z.map((r, a) => sum(r.slice(a + 1)))), dn = sum(z.map((r, a) => sum(r.slice(0, a))));
-  $('#i-flow').innerHTML = tot ? `Of ${fmt(tot)} returning sites: <b>${pc(same, tot)}</b> stayed in the same range, <b>${pc(up, tot)}</b> moved up and <b>${pc(dn, tot)}</b> moved down.` : 'No returning sites in this selection.';
-
-  const z3 = LEVELS.map((_, a) => LEVELS.map((_, b) => both.filter(s => levelIdx(s.hist['2024-25'].tp) === a && levelIdx(s.tp) === b).length));
-  plot('c-flow3', [{type: 'heatmap', x: LEVELS.map(l => l.name), y: LEVELS.map(l => l.name), z: z3, colorscale: [[0, '#f1f6fa'], [1, P.blue]], showscale: false, text: z3.map(r => r.map(String)), texttemplate: '%{text}',
+  const z = LEVELS.map((_, a) => LEVELS.map((_, b) => both.filter(s => levelIdx(s.hist['2024-25'].tp) === a && levelIdx(s.tp) === b).length));
+  plot('c-flow', [{type: 'heatmap', x: LEVELS.map(l => l.name), y: LEVELS.map(l => l.name), z, colorscale: [[0, '#f1f6fa'], [1, P.blue]], showscale: false, text: z.map(r => r.map(String)), texttemplate: '%{text}',
     hovertemplate: '2024-25 %{y} → 2025-26 %{x}: %{z} sites<extra></extra>'}],
     {xaxis: {title: '2025-26 rating'}, yaxis: {title: '2024-25 rating', autorange: 'reversed'}, margin: {t: 10, r: 10, b: 60, l: 150}});
+  const tot = sum(z.flat()), same = sum(LEVELS.map((_, i) => z[i][i])), up = sum(z.map((r, a) => sum(r.slice(a + 1)))), dn = sum(z.map((r, a) => sum(r.slice(0, a))));
+  $('#i-flow').innerHTML = tot ? `Of ${fmt(tot)} returning sites: <b>${pc(same, tot)}</b> stayed at the same level, <b>${pc(up, tot)}</b> moved up and <b>${pc(dn, tot)}</b> moved down.` : 'No returning sites in this selection.';
 
   const d = both.filter(s => s.ip != null && s.hist['2024-25'].ip != null).map(s => s.ip - s.hist['2024-25'].ip);
   plot('c-delta', [{type: 'histogram', x: d, xbins: {size: 10}, marker: {color: P.blue}, hovertemplate: 'Change %{x}: %{y} sites<extra></extra>'}],

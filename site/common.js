@@ -1,28 +1,40 @@
 // Shared data loading, filter bar, brand palette and chart helpers for all pages.
 const P = {blue: '#11689B', navy: '#0E3F66', green: '#99CA3C', greenD: '#6FA82B', orange: '#F7941D', grey: '#98999B', lightBlue: '#9CC3DB', ink: '#23323f', grid: '#e9eef2'};
-// VQB5 is read through 100-point score ranges (as in the regional summaries), shown on one neutral sequential scale.
-const RANGES = ['399 or less', '400-499', '500-599', '600-699', '700-800'];
-const RANGE_COLORS = ['#D3E4F0', '#A9C9DD', '#6FA3C7', '#11689B', '#0E3F66'];
-const RANGE_TEXT = ['#23323f', '#23323f', '#23323f', '#fff', '#fff'];
-const rangeIdx = v => v == null ? -1 : v <= 399 ? 0 : v <= 499 ? 1 : v <= 599 ? 2 : v <= 699 ? 3 : 4;
-const rangeOf = v => v == null ? null : RANGES[rangeIdx(v)];
-// share of `list` (sites with a total score) in each range -> counts array
-const rangeCounts = list => { const c = RANGES.map(() => 0); list.forEach(s => { const i = rangeIdx(s.tp); if (i >= 0) c[i]++; }); return c; };
-// Rating levels are defined as groups of the 100-point ranges above, so every chart can switch scheme in one place.
-// Current VQB5: 3 levels. The coming 5-level system is built on 100-point bands; add it here once VDOE's official
-// level names and cut-offs are confirmed (do not guess them). Levels run low -> high.
+// ---- Rating scale -------------------------------------------------------------------------------------------
+// Total scores fall in five 100-point bands (the building block for every scale). A rating scale is a set of
+// levels, each a group of bands, ordered low -> high.
+//   three = VQB5 today: Needs Support 100-399 | Meets Expectations 400-699 | Exceeds Expectations 700-800
+//   five  = the coming 5-level system, built on the 100-point bands. VDOE's official level names are not yet
+//           confirmed, so levels are labelled by their point band (add names here once confirmed).
+// The 3-level scale is the default. Add ?scale=5 to any page URL to preview the 5-level scale.
+const BANDS = ['399 or less', '400-499', '500-599', '600-699', '700-800'];
+const bandIdx = v => v == null ? -1 : v <= 399 ? 0 : v <= 499 ? 1 : v <= 599 ? 2 : v <= 699 ? 3 : 4;
+const bandCounts = list => { const c = BANDS.map(() => 0); list.forEach(s => { const i = bandIdx(s.tp); if (i >= 0) c[i]++; }); return c; };
 const SCHEMES = {
-  three: {name: '3-level (current)', groups: [[0], [1, 2, 3], [4]], levels: [
-    {name: 'Needs Support', pts: '100-399', color: P.orange, text: '#23323f'},
-    {name: 'Meets Expectations', pts: '400-699', color: P.lightBlue, text: '#23323f'},
-    {name: 'Exceeds Expectations', pts: '700-800', color: P.greenD, text: '#fff'}]},
+  three: {key: 'three', title: '3-level', groups: [[0], [1, 2, 3], [4]], levels: [
+    {name: 'Needs Support', short: 'Needs Support', pts: '100-399', color: P.orange, text: '#23323f'},
+    {name: 'Meets Expectations', short: 'Meets', pts: '400-699', color: P.lightBlue, text: '#23323f'},
+    {name: 'Exceeds Expectations', short: 'Exceeds', pts: '700-800', color: P.greenD, text: '#fff'}]},
+  five: {key: 'five', title: '5-level (preview)', groups: [[0], [1], [2], [3], [4]], levels: [
+    {name: '399 or less', short: '399 or less', pts: '100-399', color: P.orange, text: '#23323f'},
+    {name: '400-499', short: '400-499', pts: '400-499', color: '#FBC77A', text: '#23323f'},
+    {name: '500-599', short: '500-599', pts: '500-599', color: P.lightBlue, text: '#23323f'},
+    {name: '600-699', short: '600-699', pts: '600-699', color: P.blue, text: '#fff'},
+    {name: '700-800', short: '700-800', pts: '700-800', color: P.greenD, text: '#fff'}]},
 };
-const SCHEME = SCHEMES.three, LEVELS = SCHEME.levels;
+let scaleKey = 'three';
+try {
+  const q = new URLSearchParams(location.search).get('scale');
+  if (q) sessionStorage.setItem('vqb5scale', q === '5' || q === 'five' ? 'five' : 'three');
+  scaleKey = sessionStorage.getItem('vqb5scale') === 'five' ? 'five' : 'three';
+} catch (e) {}
+const SCHEME = SCHEMES[scaleKey], LEVELS = SCHEME.levels;
 const levelsFromBins = bins => SCHEME.groups.map(g => sum(g.map(i => bins[i])));   // counts per level, low -> high
-const levelIdx = tp => tp == null ? -1 : SCHEME.groups.findIndex(g => g.includes(rangeIdx(tp)));
+const levelIdx = tp => tp == null ? -1 : SCHEME.groups.findIndex(g => g.includes(bandIdx(tp)));
 const levelOf = tp => LEVELS[levelIdx(tp)]?.name ?? null;
-const levelCounts = list => levelsFromBins(rangeCounts(list));
+const levelCounts = list => levelsFromBins(bandCounts(list));
 const DESC = LEVELS.map((_, i) => LEVELS.length - 1 - i);   // display order high -> low, like VDOE's own tables
+const lvShort = i => LEVELS[i].short;
 const TYPES = ['Center', 'Public School', 'Family Day Home'];
 const TLABEL = {Center: 'Child care centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based child care'};
 const TSHORT = {Center: 'Centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based'};   // compact labels for tables
@@ -49,7 +61,6 @@ const FILTERS = [
   ['county', 'Locality', s => [s.county]],
   ['type', 'Site type', s => [s.type]],
   ['level', 'Quality rating', s => [levelOf(s.tp)]],
-  ['range', 'Score range (total points)', s => [rangeOf(s.tp)]],
   ['rooms', 'Age group served', s => s.rooms],
   ['fund', 'Public funding', s => s.fund],
   ['honor', 'Honor roll', s => s.honor],
@@ -84,7 +95,6 @@ function refreshOptions() {
     for (const s of ALL) if (match(s, k)) for (const v of get(s)) if (v) counts[v] = (counts[v] || 0) + 1;
     if (state[k] && !(state[k] in counts)) delete state[k];
     let keys = Object.keys(counts).sort();
-    if (k === 'range') keys = RANGES.filter(r => counts[r]);
     if (k === 'level') keys = LEVELS.map(l => l.name).filter(r => counts[r]);
     const sel = $('#f-' + k);
     sel.innerHTML = '<option value="">All</option>' + keys.map(v => `<option value="${esc(v)}">${esc(v)} (${counts[v]})</option>`).join('');
@@ -138,4 +148,5 @@ const NAV = `<div class="stripe"></div><header><div class="wrap">
 const FOOT = `<footer class="wrap">Source: <a href="https://earlychildhoodquality.doe.virginia.gov/quality-ratings/">Virginia Department of Education VQB5 Quality Rating Data</a> (2023-24 to 2025-26) and Ready Region North Central CLASS and coaching summaries. Statewide figures are aggregates shown for comparison. This is an independent visualization; VDOE's published data is the official record.</footer>`;
 document.head.insertAdjacentHTML('beforeend', '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap">');
 document.body.insertAdjacentHTML('afterbegin', NAV);
+if (scaleKey === 'five') document.querySelector('header').insertAdjacentHTML('afterend', '<div class="preview-banner"><div class="wrap">Preview: the coming 5-level rating scale, shown as 100-point bands. the official level names from VDOE are pending. <a href="?scale=3">Back to the current 3-level view</a></div></div>');
 document.body.insertAdjacentHTML('beforeend', FOOT);

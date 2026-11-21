@@ -20,3 +20,8 @@ Filterable charts built from the Virginia Department of Education's public
 ## Publish on GitHub Pages
 A workflow in `.github/workflows/pages.yml` deploys `site/` on every push to `main`.
 One-time setup: repo Settings → Pages → Source: **GitHub Actions**.
+
+## Rating scales
+Every chart reads from one rating scale defined in `site/common.js` (`SCHEMES`). The current 3-level scale (Needs Support / Meets / Exceeds) is the default.
+The coming 5-level scale is built on 100-point bands, so it is already available as a preview: add `?scale=5` to any page URL
+(`?scale=3` switches back). Its levels are labelled by point band until VDOE's official level names are confirmed; update the names in `SCHEMES.five`.

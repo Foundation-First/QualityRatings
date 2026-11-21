@@ -9,8 +9,8 @@
  <div class="card"><h3>Curricula in use</h3><p>Number of sites in the selection reporting each curriculum (top 20; a site can list several).</p><div id="c-curr" class="chart tall"></div></div>
  <div class="card"><h3>Public funding sources</h3><p>Sites in the selection receiving each source (a site can have several).</p><div id="c-fund" class="chart tall"></div></div>
  <div class="card"><h3>Age groups served</h3><p>Classroom age groups per site (a site can serve several).</p><div id="c-rooms" class="chart"></div></div>
- <div class="card"><h3>Score ranges by funding source</h3><p>Share of sites in each 100-point range among sites receiving that source.</p><div id="c-fr" class="chart"></div></div>
- <div class="card"><h3>Quality ratings by funding source</h3><p>Number of sites at each rating level, for the most common funding sources.</p><div class="tbl" id="t-fl"></div></div>
+ <div class="card"><h3>Quality ratings by funding source (percent)</h3><p>Share of sites at each rating level among sites receiving that source.</p><div id="c-fr" class="chart"></div></div>
+ <div class="card"><h3>Quality ratings by funding source (numbers)</h3><p>Number of sites at each rating level, for the most common funding sources.</p><div class="tbl" id="t-fl"></div></div>
  <div class="card"><h3>Honor roll designations</h3><p>Excellence, Improvement and Infant/Toddler honor roll counts.</p><div id="c-honor" class="chart"></div></div>
 </div></main>
 <script src="common.js"></script>
@@ -40,13 +40,13 @@ function draw() {
   hbar('c-honor', countBy(F, s => s.honor), 5, 110);
   const fc = countBy(F, s => s.fund), keys = Object.keys(fc).sort((a, b) => fc[b] - fc[a]).slice(0, 10).reverse();
   const fl = [...keys].reverse().map(k => { const l = F.filter(s => s.fund.includes(k)), c = levelCounts(l); return [k, l.length, ...DESC.map(i => c[i])]; });
-  $('#t-fl').innerHTML = table(['Funding source', 'Sites', ...DESC.map(i => LEVELS[i].name.replace(' Expectations', ''))], fl);
-  const fcnt = Object.fromEntries(keys.map(k => [k, rangeCounts(F.filter(s => s.fund.includes(k)))]));
-  plot('c-fr', RANGES.map((r, i) => ({name: r, type: 'bar', orientation: 'h', y: keys, marker: {color: RANGE_COLORS[i]},
+  $('#t-fl').innerHTML = table(['Funding source', 'Sites', ...DESC.map(lvShort)], fl);
+  const fcnt = Object.fromEntries(keys.map(k => [k, levelCounts(F.filter(s => s.fund.includes(k)))]));
+  plot('c-fr', LEVELS.map((l, i) => ({name: l.name, type: 'bar', orientation: 'h', y: keys, marker: {color: l.color},
     x: keys.map(k => { const t = sum(fcnt[k]); return t ? 100 * fcnt[k][i] / t : 0; }), customdata: keys.map(k => fcnt[k][i]),
-    text: keys.map(k => { const t = sum(fcnt[k]); return t && 100 * fcnt[k][i] / t >= 8 ? Math.round(100 * fcnt[k][i] / t) + '%' : ''; }), textposition: 'inside', insidetextfont: {color: RANGE_TEXT[i]},
-    hovertemplate: `%{y}<br>${r} points: %{customdata} sites (%{x:.0f}%)<extra></extra>`})),
-    {barmode: 'stack', xaxis: {title: '% of sites', range: [0, 100]}, legend: {orientation: 'h', y: -0.3, title: {text: 'Points: '}}, margin: {t: 10, r: 10, b: 90, l: 230}});
+    text: keys.map(k => { const t = sum(fcnt[k]); return t && 100 * fcnt[k][i] / t >= 8 ? Math.round(100 * fcnt[k][i] / t) + '%' : ''; }), textposition: 'inside', insidetextfont: {color: l.text},
+    hovertemplate: `%{y}<br>${l.name}: %{customdata} sites (%{x:.0f}%)<extra></extra>`})),
+    {barmode: 'stack', xaxis: {title: '% of sites', range: [0, 100]}, legend: {orientation: 'h', y: -0.3}, margin: {t: 10, r: 10, b: 90, l: 230}});
 }
 init('programs', draw, {class: true});
 </script></body></html>

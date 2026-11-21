@@ -70,3 +70,5 @@ footer{color:var(--mute);font-size:13px;padding:0 0 34px}
 .logos{margin-left:auto;display:flex;gap:14px;align-items:center}
 @media(max-width:640px){.hero h2{font-size:22px}.brand img.rr{display:none}.chart{height:330px}}
 @media print{#filters,nav,.seg{display:none}body{background:#fff}.card,.kpi{box-shadow:none}}
+
+.preview-banner{background:#fff4e0;border-bottom:1px solid #f3d29a;color:#7a4300;font-size:13px;padding:7px 0}.preview-banner a{color:#7a4300;font-weight:800}
