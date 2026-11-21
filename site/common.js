@@ -59,7 +59,7 @@ const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&
 const pc = (v, n) => { if (!n) return '–'; const p = 100 * v / n; return p > 0 && p < 1 ? '<1%' : Math.round(p) + '%'; };
 // groups (optional): [[label, colspan], ...] draws a spanning header row above the column headings
 const table = (head, rows, numFrom = 1, groups) => `<table><thead>${groups ? `<tr class="grp">${groups.map(([l, n]) => `<th colspan="${n}">${l}</th>`).join('')}</tr>` : ''}<tr>${head.map((h, i) => `<th class="${i >= numFrom ? 'n' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i >= numFrom ? 'n' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-const kpis = items => items.map(([b, s, c]) => `<div class="kpi"${c ? ` style="border-top-color:${c}"` : ''}><b>${b}</b><span>${s}</span></div>`).join('');
+const kpis = items => items.map(([b, s, c]) => `<div class="kpi"><b>${b}</b><span>${c ? `<i class="dot" style="background:${c}"></i>` : ''}${s}</span></div>`).join('');
 async function loadJSON(name) { return (await fetch('data/' + name + '.json')).json(); }
 
 let state = {};
@@ -127,7 +127,7 @@ function update() {
 function plot(id, traces, layout = {}) {
   const base = {
     margin: {t: 10, r: 12, b: 70, l: 50}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-    font: {family: "'Nunito Sans',system-ui,sans-serif", color: P.ink, size: 13}, legend: {orientation: 'h', y: -0.3},
+    font: {family: "'Nunito Sans',system-ui,sans-serif", color: P.ink, size: 15}, legend: {orientation: 'h', y: -0.3},
     xaxis: {gridcolor: P.grid, automargin: true, zeroline: false}, yaxis: {gridcolor: P.grid, automargin: true, zeroline: false},
     hoverlabel: {font: {family: "'Nunito Sans',system-ui,sans-serif"}},
   };
@@ -170,10 +170,10 @@ function sankeyLevels(id, sites, years = ['2023-24', '2024-25', '2025-26']) {
     const rgb = colorOf(a).replace('#', ''), r = parseInt(rgb.slice(0, 2), 16), g = parseInt(rgb.slice(2, 4), 16), bl = parseInt(rgb.slice(4, 6), 16);
     lcol.push(`rgba(${r},${g},${bl},${a === NR ? 0.5 : 0.7})`);
     if (a !== NR && b !== NR) { moved.total += v; if (a !== b) moved.changed += v; }
-    ltxt.push(`${years[c]} ${a === NR ? 'Not yet rated' : LEVELS[a].name} → ${years[c + 1]} ${b === NR ? 'Not yet rated' : LEVELS[b].name}`);
+    ltxt.push(`${years[c]} ${a === NR ? 'Not yet rated' : LEVELS[a].name} to ${years[c + 1]} ${b === NR ? 'Not yet rated' : LEVELS[b].name}`);
   });
-  const lay = {margin: {t: 30, r: 10, b: 10, l: 10}, paper_bgcolor: 'rgba(0,0,0,0)', font: {family: "'Nunito Sans',system-ui,sans-serif", color: P.ink, size: 12},
-    annotations: years.map((yy, c) => ({text: `<b>${yy}</b>`, x: [0, 0.5, 1][c] ?? c / (NCOL - 1), xanchor: ['left', 'center', 'right'][c] ?? 'center', y: 1.06, yref: 'paper', showarrow: false, font: {size: 13}}))};
+  const lay = {margin: {t: 30, r: 10, b: 10, l: 10}, paper_bgcolor: 'rgba(0,0,0,0)', font: {family: "'Nunito Sans',system-ui,sans-serif", color: P.ink, size: 15},
+    annotations: years.map((yy, c) => ({text: `<b>${yy}</b>`, x: [0, 0.5, 1][c] ?? c / (NCOL - 1), xanchor: ['left', 'center', 'right'][c] ?? 'center', y: 1.06, yref: 'paper', showarrow: false, font: {size: 15}}))};
   sankeyLevels.lastMoved = moved;
   Plotly.react(id, [{type: 'sankey', arrangement: 'fixed', node: {pad: 14, thickness: 18, line: {width: 0}, label, color, x, y, hovertemplate: '%{label}<extra></extra>'},
     link: {source: src, target: tgt, value: val, color: lcol, customdata: ltxt, hovertemplate: '%{customdata}: %{value} sites<extra></extra>'}}], lay, {displayModeBar: false, responsive: true});
@@ -221,7 +221,7 @@ async function init(page, cb, opts = {}) {
   update();
 }
 
-const NAV = `<div class="stripe"></div><header><div class="wrap">
+const NAV = `<header><div class="wrap">
 <div class="brand"><img src="img/ff-logo.png" alt="Foundation First – Building Early Childhood Success"><h1>Ready Region North Central - VQB5 Quality Ratings Explorer<small>2025-26 program year</small></h1>
 <div class="logos"><img class="rr" src="img/rrnc-logo.png" alt="Ready Region North Central" style="height:52px"></div></div>
 <nav><a data-p="summary" href="index.html">Home</a><a data-p="locality" href="locality.html">My locality</a><a data-p="time" href="over-time.html">Over time</a><a data-p="types" href="types.html">Program types</a><a data-p="class" href="class.html">CLASS</a><a data-p="about" href="about.html">About</a></nav></div></header>

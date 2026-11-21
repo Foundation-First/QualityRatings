@@ -4,8 +4,8 @@
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script>
 <style>
 .pickers{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;align-items:end}
-.chk{flex-direction:row;align-items:center;gap:8px;font-size:14px;color:var(--ink)}.chk input{width:18px;height:18px;accent-color:var(--blue)}
-.legend-lv{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0 0;font-size:13px;font-weight:700}
+.chk{flex-direction:row;align-items:center;gap:8px;font-size:16px;color:var(--ink)}.chk input{width:18px;height:18px;accent-color:var(--blue)}
+.legend-lv{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0 0;font-size:16px;font-weight:700}
 .legend-lv i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
 .empty{padding:24px;text-align:center;color:var(--mute)}
 </style></head>
@@ -167,8 +167,8 @@ function draw() {
   const pctOf = l => l.k === 'state' ? pctileState(regionType, site.tp) : pctileList(l.list, site.tp);
   if (site) {
     const parts = others.map(l => `${pctOf(l)}% ${l.k === 'state' ? 'of Virginia ' + sName : l.k === 'region' ? 'in the region' : 'in ' + esc(l.nm)}`);
-    $('#i-dist').innerHTML = `<b>${esc(site.name)}</b> scored <b>${f0(site.tp)}</b> points (${esc(levelOf(site.tp))}), higher than about ${parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0]}.`;
-  } else $('#i-dist').innerHTML = `${esc(focus.label)} averages <b>${f0(focus.tp)}</b> points: ` + others.map(l => `<b>${diff(focus.tp, l.tp)}</b> vs. ${esc(l.label)}`).join(', ') + '.';
+    $('#i-dist').innerHTML = `<b>${esc(site.name)}</b> scored ${f0(site.tp)} points (${esc(levelOf(site.tp))}), higher than about ${parts.length > 1 ? parts.slice(0, -1).join(', ') + ' and ' + parts[parts.length - 1] : parts[0]}.`;
+  } else $('#i-dist').innerHTML = `${esc(focus.label)} averages ${f0(focus.tp)} points: ` + others.map(l => `${diff(focus.tp, l.tp)} vs. ${esc(l.label)}`).join(', ') + '.';
 
   // Share of sites at each rating level
   const order = [...levels].reverse();

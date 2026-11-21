@@ -18,16 +18,16 @@
 function draw() {
   const S = SUMMARY, cur = S.years['2025-26'], st = S.statewide['2025-26'], n = cur.n;
   const order = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg), av = t => Math.round(cur.byType[t].avg);
-  $('#answer').innerHTML = `Average score: ` + order.map((t, i) => `${i ? TLABEL[t].toLowerCase() : TLABEL[t]} <b>${av(t)}</b>`).join(', ') + ` points.`;
+  $('#answer').innerHTML = `Average score: ` + order.map((t, i) => `${i ? TLABEL[t].toLowerCase() : TLABEL[t]} ${av(t)}`).join(', ') + ` points.`;
   const rows = [...order].reverse();   // plotly lists bottom-up, so the highest ends on top
   plot('c-avg', [
     {name: 'RRNC', type: 'scatter', mode: 'markers+text', x: rows.map(t => cur.byType[t].avg), y: rows.map(t => TLABEL[t]), text: rows.map(t => av(t)), textposition: 'top center', marker: {size: 15, color: P.rrnc, line: {width: 1.5, color: '#fff'}}, hovertemplate: '%{y}: %{x:.0f}<extra>RRNC</extra>'},
     {name: 'Virginia', type: 'scatter', mode: 'markers', x: rows.map(t => st.byType[t].avg), y: rows.map(t => TLABEL[t]), marker: {symbol: 'diamond', size: 13, color: P.grey, line: {width: 1.5, color: '#fff'}}, hovertemplate: '%{y}: %{x:.0f}<extra>Virginia</extra>'}],
-    {xaxis: {title: 'Average points', range: [540, 660]}, yaxis: {automargin: true}, legend: {orientation: 'h', y: -0.35}, margin: {t: 10, r: 20, b: 80, l: 170}});
+    {xaxis: {title: 'Average points', range: [540, 660]}, yaxis: {automargin: true, range: [-0.6, rows.length - 0.35]}, legend: {orientation: 'h', y: -0.35}, margin: {t: 20, r: 20, b: 80, l: 170}});
   const B = S.bins.byType, tl = Object.fromEntries(TYPES.map(t => [t, levelsFromBins(B[t])]));
   $('#t-levels').innerHTML = table(['Program type', ...DESC.map(lvHead)], [...order.map(t => [TSHORT[t], ...DESC.map(i => np(tl[t][i], sum(tl[t])))]), ['<b>All sites</b>', ...DESC.map(i => `<b>${np(levelsFromBins(cur.bins)[i], n)}</b>`)]]);
   const hn = S.honor['2025-26'], names = ['Excellence Honor Roll', 'Improvement Honor Roll', 'Infant & Toddler Honor Roll'], keys = Object.keys(hn).filter(k => k !== '_unique');
-  $('#answer2').innerHTML = `<b>${hn._unique}</b> sites (${pc(hn._unique, n)}) are on at least one Honor Roll.`;
+  $('#answer2').innerHTML = `${hn._unique} sites (${pc(hn._unique, n)}) are on at least one Honor Roll.`;
   $('#t-honor').innerHTML = table(['Honor Roll', 'Centers', 'Home-based', 'Public schools', 'Total'], keys.map((k, j) => { const r = hn[k]; return [names[j], r.Center, r['Family Day Home'], k.includes('Infant') ? 'N/A' : r['Public School'], `<b>${sum(TYPES.map(x => r[x]))}</b>`]; }));
 }
 init('types', draw, {filters: false, summary: true});

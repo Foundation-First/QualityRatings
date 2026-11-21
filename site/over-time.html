@@ -26,7 +26,7 @@ function draw() {
   const tps = YRS.map(y => c.map(s => y === '2025-26' ? s.tp : s.hist[y].tp));
   const avg = tps.map(a => mean(a)), va = YRS.map(y => type ? SUMMARY.statewide[y].byType[type].avg : SUMMARY.statewide[y].avg);
   const who = {'': 'sites', Center: 'centers', 'Public School': 'public-school sites', 'Family Day Home': 'home-based programs'}[type];
-  $('#answer').innerHTML = c.length ? `The <b>${c.length}</b> ${who} that took part in all three years averaged <b>${Math.round(avg[0])}</b> points in 2023-24, <b>${Math.round(avg[1])}</b> in 2024-25 and <b>${Math.round(avg[2])}</b> in 2025-26.` : 'No sites in this group took part in all three years.';
+  $('#answer').innerHTML = c.length ? `The ${c.length} ${who} that took part in all three years averaged ${Math.round(avg[0])} points in 2023-24, ${Math.round(avg[1])} in 2024-25 and ${Math.round(avg[2])} in 2025-26.` : 'No sites in this group took part in all three years.';
   plot('c-line', [
     {name: 'RRNC (same sites each year)', type: 'scatter', mode: 'lines+markers+text', x: YRS, y: avg, text: avg.map(v => Math.round(v)), textposition: 'top center', line: {color: P.rrnc, width: 3}, marker: {size: 9}, hovertemplate: '%{x}: %{y:.0f}<extra>RRNC</extra>'},
     {name: 'Virginia (all sites)', type: 'scatter', mode: 'lines+markers+text', x: YRS, y: va, text: va.map(v => Math.round(v)), textposition: 'bottom center', line: {color: P.grey, width: 3}, marker: {size: 9}, hovertemplate: '%{x}: %{y:.0f}<extra>Virginia</extra>'}],

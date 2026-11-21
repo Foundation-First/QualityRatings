@@ -9,7 +9,7 @@
 <div class="kpis" id="kpis"></div>
 <div class="card"><h3>Ratings: your choice, RRNC and Virginia</h3><div id="c-share" class="chart short"></div></div>
 <p class="small" id="note"></p>
-<p class="small"><a href="compare.html">Look up a specific school or program →</a></p>
+<p class="small"><a href="compare.html">Look up a specific school or program</a></p>
 </main>
 <script src="common.js"></script>
 <script>
@@ -37,8 +37,8 @@ function draw() {
   const rr = Math.round(SUMMARY.years['2025-26'].avg), va = Math.round(BENCH.state.all.tp), last = LEVELS.length - 1;
   const good = scaleKey === 'three' ? `met or exceeded expectations` : `scored 600 or higher`, nGood = scaleKey === 'three' ? L[1] + L[2] : L[last] + L[last - 1];
   const sites = kind === 'dist' ? 'public-school sites' : 'sites';
-  $('#answer').innerHTML = kind ? `In <b>${esc(label)}</b>, <b>${nGood} of ${n}</b> ${sites} ${good}. The average score was <b>${avg}</b> points, compared with <b>${rr}</b> for RRNC and <b>${va}</b> for Virginia.`
-    : `In RRNC, <b>${nGood} of ${n}</b> sites ${good}. The average score was <b>${avg}</b> points, compared with <b>${va}</b> for Virginia.`;
+  $('#answer').innerHTML = kind ? `In <b>${esc(label)}</b>, ${nGood} of ${n} ${sites} ${good}. The average score was <b>${avg} points</b>, compared with ${rr} for RRNC and ${va} for Virginia.`
+    : `In RRNC, ${nGood} of ${n} sites ${good}. The average score was <b>${avg} points</b>, compared with ${va} for Virginia.`;
   $('#kpis').innerHTML = kpis([[fmt(n), kind === 'dist' ? 'public-school sites' : 'sites'], [avg, 'average points'], ...DESC.map(i => [fmt(L[i]), LEVELS[i].name, LEVELS[i].color])]);
   const rows = [[label, L, n]];
   if (kind) rows.push(['RRNC', levelsFromBins(SUMMARY.years['2025-26'].bins), SUMMARY.years['2025-26'].n]);

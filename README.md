@@ -33,3 +33,7 @@ tan / slate / brown = site types, dark / light green = emphasis within RRNC data
 
 ## Refreshing
 `python scripts/build_data.py` rebuilds `site/data/*.json` (including `meta.json`, which drives the "data last refreshed" line in the footer).
+
+## Type and look
+Minimum text size is 16px on the page and 15px inside charts (set in `site/style.css` and the `plot()` helper in `site/common.js`); keep new text at or above that.
+The look is deliberately plain: flat navy banner, thin-bordered cards with small corners, no shadows, no colored side-bars, no gradients. Bold is reserved for place names and headline figures.

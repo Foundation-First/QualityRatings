@@ -46,7 +46,7 @@ function draw() {
   const L = CLASS.local, X = CLASS.external, sup = CLASS.support;
   const fall = sum(AGES.map(a => L.counts[a][0])), spr = sum(AGES.map(a => L.counts[a][1]));
   $('#hero .wrap').innerHTML = `<h2>${fmt(fall + spr)} local CLASS observations were completed this year</h2>
-    <p>The average total CLASS score was <b>${f2(L.total_avg[0])}</b> in fall 2025 and <b>${f2(L.total_avg[1])}</b> in spring 2026. <b>${pc(sum(AGES.map(a => L.spring[a][3])), spr)}</b> of classrooms scored in the 5.00–7.00 range this spring.</p>`;
+    <p>The average total CLASS score was ${f2(L.total_avg[0])} in fall 2025 and ${f2(L.total_avg[1])} in spring 2026. ${pc(sum(AGES.map(a => L.spring[a][3])), spr)} of classrooms scored in the 5.00–7.00 range this spring.</p>`;
   $('#kpis').innerHTML = kpis([
     [fmt(fall + spr), `local observations (${fmt(fall)} fall, ${fmt(spr)} spring)`],
     [f2(L.total_avg[1]), `spring average CLASS score (fall ${f2(L.total_avg[0])})`],
@@ -59,7 +59,7 @@ function draw() {
   const d = AGES.map(a => L.avg[a][1] - L.avg[a][0]);
   const up = AGES.filter((a, i) => d[i] > 0), down = AGES.filter((a, i) => d[i] < 0);
   const sg = x => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(2);
-  $('#i-fs').innerHTML = `Change from fall to spring: ` + AGES.map((a, i) => `${a} <b>${sg(d[i])}</b>`).join(', ') + `.`;
+  $('#i-fs').innerHTML = `Change from fall to spring: ` + AGES.map((a, i) => `${a} ${sg(d[i])}`).join(', ') + `.`;
 
   const lbl = L.springIntervals, cols = ['#E6F2D0', '#C5E08F', '#8DC152', '#4F8A12'];
   plot('c-spring', lbl.map((iv, i) => ({name: iv, type: 'bar', orientation: 'h', y: AGES.map(a => a + ' (' + sum(L.spring[a]) + ')'), x: AGES.map(a => 100 * L.spring[a][i] / sum(L.spring[a])), marker: {color: cols[i]},
@@ -67,7 +67,7 @@ function draw() {
     hovertemplate: `%{y}<br>${iv}: %{customdata} classrooms (%{x:.0f}%)<extra></extra>`})),
     {barmode: 'stack', xaxis: {title: '% of classrooms', range: [0, 100]}, yaxis: {autorange: 'reversed'}, margin: {t: 10, r: 10, b: 70, l: 110}, legend: {orientation: 'h', y: -0.35, title: {text: 'Score:  '}}});
   const low = sum(AGES.map(a => L.spring[a][0] + L.spring[a][1]));
-  $('#i-spring').innerHTML = `<b>${fmt(low)} classrooms (${pc(low, spr)})</b> scored below 4.00 this spring and are prioritized for coaching in FY27.`;
+  $('#i-spring').innerHTML = `${fmt(low)} classrooms (${pc(low, spr)}) scored below 4.00 this spring and are prioritized for coaching in FY27.`;
 
   $('#t-counts').innerHTML = table(['Age level', 'Fall 2025', 'Spring 2026', 'Total'],
     [...AGES.map(a => [a + ' CLASS', fmt(L.counts[a][0]), fmt(L.counts[a][1]), fmt(sum(L.counts[a]))]), ['<b>Total</b>', `<b>${fmt(fall)}</b>`, `<b>${fmt(spr)}</b>`, `<b>${fmt(fall + spr)}</b>`]]);
@@ -80,7 +80,7 @@ function draw() {
                 {name: 'Not using', type: 'bar', orientation: 'h', y: ages.map(a => a + ' classrooms'), x: ages.map(a => cr[a][1] - cr[a][0]), marker: {color: P.absent}, text: ages.map(a => cr[a][1] - cr[a][0]), textposition: 'inside', hovertemplate: '%{y}: %{x} not using<extra></extra>'}],
     {barmode: 'stack', xaxis: {title: 'Classrooms'}, yaxis: {autorange: 'reversed'}, legend: {orientation: 'h', y: -0.3}, margin: {t: 10, r: 10, b: 90, l: 150}});
   const cu = sum(ages.map(a => cr[a][0])), ct = sum(ages.map(a => cr[a][1]));
-  $('#i-cr').innerHTML = `<b>${pc(cu, ct)}</b> of ${ct.toLocaleString()} classrooms use an approved curriculum (${ages.map(a => `${a} ${pc(cr[a][0], cr[a][1])}`).join(', ')}).`;
+  $('#i-cr').innerHTML = `${pc(cu, ct)} of ${ct.toLocaleString()} classrooms use an approved curriculum (${ages.map(a => `${a} ${pc(cr[a][0], cr[a][1])}`).join(', ')}).`;
 }
 
 function drawTotals() {
@@ -100,7 +100,7 @@ function drawExternal() {
   const lo = [...E.dims].sort((a, b) => a[1] - b[1]), hi = lo[lo.length - 1];
   const gaps = E.dims.map(x => [x[0], x[1] - x[2]]).sort((a, b) => a[1] - b[1]);
   const stLo = [...E.dims].sort((a, b) => a[2] - b[2])[0];
-  $('#i-dims').innerHTML = `Highest in RRNC: <b>${hi[0]}</b> (${f2(hi[1])}). Lowest in RRNC: <b>${lo[0][0]}</b> (${f2(lo[0][1])})` + (stLo[0] === lo[0][0] ? `. Statewide the lowest is also ${stLo[0]} (${f2(stLo[2])}).` : `. Statewide the lowest is ${stLo[0]} (${f2(stLo[2])}).`);
+  $('#i-dims').innerHTML = `Highest in RRNC: ${hi[0]} (${f2(hi[1])}). Lowest in RRNC: ${lo[0][0]} (${f2(lo[0][1])})` + (stLo[0] === lo[0][0] ? `. Statewide the lowest is also ${stLo[0]} (${f2(stLo[2])}).` : `. Statewide the lowest is ${stLo[0]} (${f2(stLo[2])}).`);
   const sites = Object.entries(E.site);
   $('#p-site').textContent = age === 'Infant' ? 'Infant averages are shown for centers only; VDOE does not report other site types for this age level.' : 'VDOE does not report averages for site types with very few observations, so they are left out.';
   grp('c-site', sites.map(([t]) => TLABEL[t]), sites.map(([, v]) => v[0]), sites.map(([, v]) => v[1]), 'Average score (1–7)', null, {t: 10, r: 20, b: 70, l: 170});
