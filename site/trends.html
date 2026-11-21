@@ -7,6 +7,7 @@
 <div class="grid">
  <div class="card"><h3>Quality ratings by year</h3><p>Share of continuing sites at each rating level.</p><div id="c-mix" class="chart"></div></div>
  <div class="card"><h3>Quality ratings by year (numbers)</h3><p>Number and percent of continuing sites at each rating level.</p><div class="tbl" id="t-levels"></div></div>
+ <div class="card" style="grid-column:1/-1"><h3>How sites moved between rating levels</h3><p>Ribbons follow the sites in your selection from year to year. Sites that joined later start in the grey “Not yet rated” bar.</p><div id="c-sankey" class="chart" style="height:430px"></div></div>
  <div class="card"><h3>Average points by year</h3><p>Same continuing sites; lines show average total and interaction points.</p><div id="c-pts" class="chart"></div></div>
  <div class="card"><h3>Movement between rating levels, 2024-25 → 2025-26</h3><p>Each cell is the number of sites that moved from the row rating (last year) to the column rating (this year). Cells on the diagonal stayed at the same level.</p><div id="c-flow" class="chart"></div><div class="insight" id="i-flow"></div></div>
  <div class="card"><h3>Change in interaction points, 2024-25 → 2025-26</h3><p>Positive = score went up. One count per site.</p><div id="c-delta" class="chart"></div></div>
@@ -25,6 +26,7 @@ function draw() {
   $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2)), ...YRS.map(y => y.slice(2))],
     [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => lv[k][i]), ...YRS.map((_, k) => pc(lv[k][i], all3.length))]), ['<b>Total</b>', ...YRS.map(() => `<b>${all3.length}</b>`), ...YRS.map(() => '<b>100%</b>')]], 1, [['', 1], ['Sites', 3], ['Percent', 3]]);
 
+  sankeyLevels('c-sankey', FILTERED);
   const line = (k, name, col) => ({name, type: 'scatter', mode: 'lines+markers', x: YRS, y: YRS.map(y => mean(all3.map(s => get(s, y)[k]).filter(v => v != null))), line: {color: col, width: 3}, hovertemplate: `%{x}: %{y:.0f} pts<extra>${name}</extra>`});
   plot('c-pts', [line('tp', 'Total points', P.blue), line('ip', 'Interaction points', P.green)], {yaxis: {title: 'Average points'}});
 

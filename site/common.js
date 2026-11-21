@@ -121,6 +121,48 @@ function plot(id, traces, layout = {}) {
   Plotly.react(id, traces, lay, {displayModeBar: false, responsive: true});
 }
 
+// Sankey (flow) diagram: rating levels by year, ribbons = sites moving between levels. `sites` need hist + tp.
+// Only sites still in the program in 2025-26 are in the source data, so earlier-year bars show those sites;
+// "Not yet rated" holds sites that joined later.
+function sankeyLevels(id, sites, years = ['2023-24', '2024-25', '2025-26']) {
+  const K = LEVELS.length, NR = K, NCOL = years.length, GREY = '#C3CAD1';
+  const tpOf = (s, y) => y === '2025-26' ? s.tp : s.hist?.[y]?.tp;
+  const lvl = (s, y) => { const tp = tpOf(s, y); return tp == null ? NR : levelIdx(tp); };
+  const cnt = years.map(() => Array(K + 1).fill(0)), flow = {};
+  sites.forEach(s => years.forEach((y, c) => {
+    const a = lvl(s, y); cnt[c][a]++;
+    if (c < NCOL - 1) { const b = lvl(s, years[c + 1]); if (a === NR && b === NR) return; const k = `${c}|${a}|${b}`; flow[k] = (flow[k] || 0) + 1; }
+  }));
+  const order = [...DESC, NR];                                   // top -> bottom: highest level first
+  const nid = (c, l) => c * (K + 1) + l;
+  const nodes = [], colorOf = l => l === NR ? GREY : LEVELS[l].color;
+  const xs = [0.02, 0.5, 0.98].slice(0, NCOL);
+  const label = [], color = [], x = [], y = [];
+  for (let c = 0; c < NCOL; c++) {
+    const shown = order.filter(l => cnt[c][l] > 0 || l !== NR);
+    const tot = sum(cnt[c]) || 1, share = l => Math.max(cnt[c][l] / tot, 0.06), allocTot = sum(shown.map(share));
+    let cum = 0;
+    for (const l of order) {                                      // every node must exist so link indices stay valid; stacked top -> bottom in `order`
+      const v = cnt[c][l], inShown = shown.includes(l);
+      const sh = inShown ? share(l) / allocTot : 0, center = cum + sh / 2; if (inShown) cum += sh;
+      label[nid(c, l)] = v ? `${l === NR ? 'Not yet rated' : LEVELS[l].name} (${v})` : '';
+      color[nid(c, l)] = colorOf(l); x[nid(c, l)] = xs[c]; y[nid(c, l)] = Math.min(0.97, Math.max(0.03, center));
+    }
+  }
+  const src = [], tgt = [], val = [], lcol = [], ltxt = [];
+  Object.entries(flow).forEach(([k, v]) => {
+    const [c, a, b] = k.split('|').map(Number);
+    src.push(nid(c, a)); tgt.push(nid(c + 1, b)); val.push(v);
+    const rgb = colorOf(a).replace('#', ''), r = parseInt(rgb.slice(0, 2), 16), g = parseInt(rgb.slice(2, 4), 16), bl = parseInt(rgb.slice(4, 6), 16);
+    lcol.push(`rgba(${r},${g},${bl},0.55)`);
+    ltxt.push(`${years[c]} ${a === NR ? 'Not yet rated' : LEVELS[a].name} → ${years[c + 1]} ${b === NR ? 'Not yet rated' : LEVELS[b].name}`);
+  });
+  const lay = {margin: {t: 30, r: 10, b: 10, l: 10}, paper_bgcolor: 'rgba(0,0,0,0)', font: {family: "'Nunito Sans',system-ui,sans-serif", color: P.ink, size: 12},
+    annotations: years.map((yy, c) => ({text: `<b>${yy}</b>`, x: [0, 0.5, 1][c] ?? c / (NCOL - 1), xanchor: ['left', 'center', 'right'][c] ?? 'center', y: 1.06, yref: 'paper', showarrow: false, font: {size: 13}}))};
+  Plotly.react(id, [{type: 'sankey', arrangement: 'fixed', node: {pad: 14, thickness: 18, line: {width: 0}, label, color, x, y, hovertemplate: '%{label}<extra></extra>'},
+    link: {source: src, target: tgt, value: val, color: lcol, customdata: ltxt, hovertemplate: '%{customdata}: %{value} sites<extra></extra>'}}], lay, {displayModeBar: false, responsive: true});
+}
+
 // page: nav key; cb: draw function; opts.data = names of extra JSON files to load (as SUMMARY / CLASS); opts.filters=false hides filter bar
 async function init(page, cb, opts = {}) {
   onChange = cb;

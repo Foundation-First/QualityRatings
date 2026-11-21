@@ -18,7 +18,7 @@
  <div class="card"><h3>Average total points</h3><p>RRNC average vs. statewide average.</p><div id="c-avg" class="chart short"></div><div class="insight" id="i-avg"></div></div>
  <div class="card"><h3>Average points by site type</h3><p>RRNC and Virginia, by program year.</p><div class="tbl" id="t-type"></div></div>
  <div class="card"><h3>Quality ratings over time</h3><p>Number and percent of RRNC sites at each rating level (all sites rated that year).</p><div class="tbl" id="t-levels"></div></div>
- <div class="card"><h3>Sites at each rating level, by year</h3><p>Each level has its own scale so none is dwarfed by the others.</p><div id="c-levels" class="chart short"></div></div>
+ <div class="card" style="grid-column:1/-1"><h3>Sites at each rating level, by year</h3><p>Each bar is a rating level and each ribbon follows sites from one year to the next. Shows the sites rated in 2025-26, so earlier-year counts can be lower than in the table above (sites that have since left VQB5 are not in the data). Sites that joined later start in the grey “Not yet rated” bar.</p><div id="c-levels" class="chart" style="height:430px"></div></div>
 </div></section>
 
 <section><h2>New and returning sites</h2><p class="lead">The region's case-management approach helps new sites onboard to VQB5.</p>
@@ -88,18 +88,7 @@ function draw() {
     [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => fmt(yl[k][i])), ...YRS.map((_, k) => pc(yl[k][i], yn[k]))]),
      ['<b>Total</b>', ...yn.map(v => `<b>${fmt(v)}</b>`), ...YRS.map(() => '<b>100%</b>')]], 1, [['', 1], ['Sites', 3], ['Percent', 3]]);
 
-  // one small chart per level, each on its own scale (levels are never combined)
-  const K = LEVELS.length, w = 1 / K, dom = i => [i * w + (i ? 0.075 / K * 3 : 0.05), (i + 1) * w - 0.01];
-  const traces = [], layout = {showlegend: false, margin: {t: 34, r: 10, b: 40, l: 40}, annotations: []};
-  DESC.forEach((li, p) => {
-    const ax = p ? p + 1 : '', mx = Math.max(...yl.map(r => r[li]));
-    traces.push({type: 'bar', x: YRS.map(y => y.slice(2)), y: yl.map(r => r[li]), text: yl.map(r => r[li]), textposition: 'outside', cliponaxis: false, marker: {color: LEVELS[li].color}, xaxis: 'x' + ax, yaxis: 'y' + ax,
-      hovertemplate: `%{x}: %{y} sites<extra>${LEVELS[li].name}</extra>`});
-    layout['xaxis' + ax] = {domain: dom(p), anchor: 'y' + ax, gridcolor: P.grid, tickfont: {size: K > 3 ? 10 : 12}};
-    layout['yaxis' + ax] = {anchor: 'x' + ax, range: [0, mx * 1.25 || 1], gridcolor: P.grid, rangemode: 'tozero', tickfont: {size: K > 3 ? 10 : 12}};
-    layout.annotations.push({text: `<b>${lvShort(li)}</b>`, x: (dom(p)[0] + dom(p)[1]) / 2, y: 1.12, xref: 'paper', yref: 'paper', showarrow: false, font: {color: '#23323f', size: K > 3 ? 11 : 13}});
-  });
-  plot('c-levels', traces, layout);
+  sankeyLevels('c-levels', ALL);
 
   // --- new vs returning
   const N = S.newSites, nl = levelsFromBins(N.newBins), retL = LEVELS.map((_, i) => curL[i] - nl[i]);
@@ -116,5 +105,5 @@ function draw() {
     [...cats.map(k => { const r = hn[k]; return [k, r.Center, r['Family Day Home'], k.includes('Infant') ? 'N/A' : r['Public School'], `<b>${sum(TYPES.map(x => r[x]))}</b>`, sum(TYPES.map(x => hs[k][x]))]; }),
      ['<b>Unique sites on any Honor Roll</b>', '', '', '', `<b>${honorTotal} (${pc(honorTotal, n)} of sites)</b>`, `${hs._unique} (${pc(hs._unique, st['2025-26'].n)})`]]);
 }
-init('summary', draw, {filters: false, summary: true});
+init('summary', draw, {filters: false, summary: true, sites: true});
 </script></body></html>
