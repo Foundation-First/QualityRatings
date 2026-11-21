@@ -219,7 +219,7 @@ async function init(page, cb, opts = {}) {
 }
 
 const NAV = `<div class="stripe"></div><header><div class="wrap">
-<div class="brand"><img src="img/ff-logo.png" alt="Foundation First – Building Early Childhood Success"><h1>VQB5 Quality Ratings Dashboard<small>Ready Region North Central (RRNC) · 2025-26 program year</small></h1>
+<div class="brand"><img src="img/ff-logo.png" alt="Foundation First – Building Early Childhood Success"><h1>Ready Region North Central - VQB5 Quality Ratings Explorer<small>2025-26 program year</small></h1>
 <div class="logos"><img class="rr" src="img/rrnc-logo.png" alt="Ready Region North Central" style="height:52px"></div></div>
 <nav><a data-p="summary" href="index.html">Summary</a><a data-p="compare" href="compare.html">Compare levels</a><a data-p="class" href="class.html">CLASS observations</a><a data-p="overview" href="ratings.html">Explore ratings</a>
 <a data-p="trends" href="trends.html">Trends</a><a data-p="programs" href="programs.html">Curriculum &amp; funding</a><a data-p="about" href="about.html">About &amp; definitions</a></nav></div></header>

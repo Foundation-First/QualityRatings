@@ -1,4 +1,3 @@
-/* Foundation First palette (sampled from the FF / Ready Region logos) */
 :root{--rrnc:#6FA82B;
   --blue:#11689B;--navy:#0E3F66;--rrnc:#135695;--green:#99CA3C;--green-d:#5F8F1B;--orange:#F7941D;--orange-d:#B5620A;
   --grey:#98999B;--ink:#23323f;--mute:#5b6b78;--line:#dde4ea;--bg:#f3f7fa;--card:#fff;--tint:#e8f1f7;--grid:#e9eef2;
@@ -23,7 +22,7 @@ nav a.on{color:var(--navy);border-bottom-color:var(--green)}
 #filters .bar b{color:var(--navy);font-size:14px}
 #count{color:var(--blue);font-weight:800;font-size:14px}
 #filters .grid-f{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;padding:8px 0 14px;align-items:end}
-label{display:flex;flex-direction:column;font-size:12px;font-weight:700;color:var(--mute);gap:3px}
+label{display:flex;flex-direction:column;font-size:13px;font-weight:700;color:var(--mute);gap:3px}
 select,input[type=search]{font:inherit;font-size:14px;padding:7px 9px;border:1px solid #c5d0d9;border-radius:8px;background:#fff;color:var(--ink);min-width:0}
 select:focus,input:focus,button:focus-visible,a:focus-visible{outline:3px solid #99CA3C88;outline-offset:1px}
 button{font:inherit;font-size:14px;font-weight:700;padding:8px 13px;border:1px solid #c5d0d9;border-radius:8px;background:#fff;color:var(--navy);cursor:pointer}
@@ -55,14 +54,14 @@ section>.lead{margin:0 0 12px;color:var(--mute);max-width:860px}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th,td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;line-height:1.35}
 th{background:var(--tint);color:var(--navy);font-weight:800;white-space:nowrap}
-tr.grp th{background:transparent;text-align:center;border-bottom:2px solid var(--blue);padding:2px 8px 3px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
+tr.grp th{background:transparent;text-align:center;border-bottom:2px solid var(--blue);padding:2px 8px 3px;font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--mute)}
 td:first-child,th:first-child{white-space:nowrap;padding-left:2px}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:#f7fafc}
 .tbl{overflow-x:auto;max-height:70vh}
 th.sortable{cursor:pointer;position:sticky;top:0}
-.pill{display:inline-block;padding:1px 9px;border-radius:10px;font-size:12px;font-weight:700;white-space:nowrap}
+.pill{display:inline-block;padding:1px 9px;border-radius:10px;font-size:13px;font-weight:700;white-space:nowrap}
 .pill.Needs{background:#fde3c3;color:#7a4300}.pill.Meets{background:#d8e8f3;color:#0b4a70}.pill.Exceeds{background:#e1f1c1;color:#40610f}
 .note{color:var(--mute);font-size:13px}
 footer{color:var(--mute);font-size:13px;padding:0 0 34px}

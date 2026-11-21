@@ -9,8 +9,8 @@
 
 <section><h2>Where sites land</h2><p class="lead" id="lead-scale"></p>
 <div class="grid">
- <div class="card"><h3>Quality ratings by site type</h3><p>Number of sites at each rating level.</p><div class="tbl" id="t-type-level"></div><div class="insight" id="i-type"></div></div>
- <div class="card"><h3>Sites by rating level and site type</h3><p>Number of sites at each level.</p><div id="c-bins" class="chart"></div><div class="insight" id="i-bins"></div></div>
+ <div class="card"><h3>Quality ratings by site type</h3><div class="tbl" id="t-type-level"></div><div class="insight" id="i-type"></div></div>
+ <div class="card"><h3>Sites by rating level and site type</h3><div id="c-bins" class="chart"></div><div class="insight" id="i-bins"></div></div>
 </div></section>
 
 <section><h2>How the region has changed over time</h2><p class="lead">RRNC compared with all VQB5-participating sites in Virginia over the first three program years.</p>
@@ -18,16 +18,16 @@
  <div class="card"><h3>Average total points</h3><p>RRNC average vs. statewide average.</p><div id="c-avg" class="chart short"></div><div class="insight" id="i-avg"></div></div>
  <div class="card"><h3>Average points by site type</h3><p>RRNC and Virginia, by program year.</p><div class="tbl" id="t-type"></div></div>
  <div class="card"><h3>Quality ratings over time</h3><p>Number and percent of RRNC sites at each rating level (all sites rated that year).</p><div class="tbl" id="t-levels"></div></div>
- <div class="card" style="grid-column:1/-1"><h3>Sites at each rating level, by year</h3><p>Each bar is a rating level and each ribbon follows sites from one year to the next. Shows the sites rated in 2025-26, so earlier-year counts can be lower than in the table above (sites that have since left VQB5 are not in the data). Sites that joined later start in the grey “Not yet rated” bar.</p><div id="c-levels" class="chart" style="height:430px"></div><div class="insight" id="i-sankey"></div></div>
+ <div class="card" style="grid-column:1/-1"><h3>Sites at each rating level, by year</h3><p>Each bar is a rating level and each ribbon follows sites from one year to the next. This visual shows the sites who participated in VQB5 during the 2025-26 year; sites that started participating later start in the grey “Not yet rated” bar.</p><div id="c-levels" class="chart" style="height:430px"></div><div class="insight" id="i-sankey"></div></div>
 </div></section>
 
-<section><h2>New and returning sites</h2><p class="lead">RRNC provides case management to help new sites get started with VQB5. This section describes where new sites scored; it does not measure the effect of that support.</p>
+<section><h2>New and returning sites</h2><p class="lead">RRNC provides case management to help new sites get started with VQB5. This section describes where new sites scored in their first year participating.</p>
 <div class="grid">
  <div class="card"><h3>Where new and returning sites land</h3><p>Share of each group at each rating level.</p><div id="c-new" class="chart short"></div><div class="insight" id="i-new"></div></div>
  <div class="card"><h3>New sites in 2025-26</h3><p>Sites with no 2024-25 score (first observed this year).</p><div id="t-new"></div></div>
 </div></section>
 
-<section><h2>Honor Rolls</h2><p class="lead">Excellence = total score of 700 or higher (Exceeds Expectations). Top Improvement = top 10% for interaction-point gains among returning sites. Top Infant &amp; Toddler = top 10% for infant/toddler interaction scores. A site can receive more than one Honor Roll each year.</p>
+<section><h2>Honor Rolls</h2><p class="lead">Excellence Honor Roll = total score of 700 or higher (Exceeds Expectations). Improvement Honor Roll = top 10% for interaction-point gains among returning sites. Infant &amp; Toddler Honor Roll = top 10% for infant/toddler interaction scores. A site can receive more than one Honor Roll each year.</p>
 <div class="card"><div class="tbl" id="t-honor"></div></div></section>
 
 <p class="note">Percentages may not sum to 100 due to rounding. Regional counts are computed from VDOE's published site-level data and match VDOE and regional summaries.</p>
@@ -47,8 +47,8 @@ function draw() {
 
   if (scaleKey === 'three') {
     const meets = curL[1] + curL[2];
-    $('#hero .wrap').innerHTML = `<h2>${meets} of ${n} sites (${(100 * meets / n).toFixed(1)}%) met or exceeded VQB5 expectations</h2>
-      <p>The Ready Region North Central (RRNC) average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st['2025-26'].avg)}. ${curL[2]} sites earned Exceeds Expectations, ${curL[1]} Meets Expectations and ${curL[0]} Needs Support.</p>`;
+    $('#hero .wrap').innerHTML = `<h2>${meets} of ${n} sites (${(100 * meets / n).toFixed(1)}%) in Ready Region North Central met or exceeded expectations in the 2025-26 program year.</h2>
+      <p>The Ready Region North Central (RRNC) average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st['2025-26'].avg)}. </p>`;
   } else {
     const top2 = curL[last] + curL[last - 1];
     $('#hero .wrap').innerHTML = `<h2>${pc(top2, n)} of RRNC sites score 600 or higher</h2>
@@ -68,7 +68,7 @@ function draw() {
      ['<b>All sites</b>', `<b>${n}</b>`, ...DESC.map(i => `<b>${np(curL[i], n)}</b>`), `<b>${Math.round(cur.avg)}</b>`]]);
   const best = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg);
   const av = t => Math.round(cur.byType[t].avg), gapO = Math.abs(cur.byType[best[1]].avg - cur.byType[best[2]].avg);
-  $('#i-type').innerHTML = `<b>${TLABEL[best[0]]}</b> average ${av(best[0])} points. ` + (gapO < 10 ? `${TLABEL[best[1]]} (${av(best[1])}) and ${TLABEL[best[2]].toLowerCase()} (${av(best[2])}) are within ${Math.max(1, Math.round(gapO))} points of each other, too close to call a difference.` : `${TLABEL[best[1]]} average ${av(best[1])} and ${TLABEL[best[2]].toLowerCase()} ${av(best[2])}.`) + ` Site types are scored the same way but serve different children and settings, so compare them with care.`;
+  $('#i-type').innerHTML = `<b>${TLABEL[best[0]]}</b> average ${av(best[0])} points. ` + (gapO < 10 ? `${TLABEL[best[1]]} (${av(best[1])}) and ${TLABEL[best[2]].toLowerCase()} (${av(best[2])}) are within ${Math.max(1, Math.round(gapO))} points of each other.` : `${TLABEL[best[1]]} average ${av(best[1])} and ${TLABEL[best[2]].toLowerCase()} ${av(best[2])}.`);
 
   // --- sites by level and type
   plot('c-bins', TYPES.map(t => ({name: TLABEL[t], type: 'bar', x: LEVELS.map(l => l.short), y: typeL[t], marker: {color: TCOLOR[t]}, hovertemplate: `%{x}<br>${TLABEL[t]}: %{y} sites<extra></extra>`})),
@@ -86,7 +86,7 @@ function draw() {
   sameLine.mode = 'lines+markers+text'; sameLine.text = YRS.map(y => Math.round(same[y])); sameLine.textposition = 'top center';
   plot('c-avg', [lRR, sameLine, lVA], {yaxis: {title: 'Average total points', range: [575, 610]}, legend: {orientation: 'h', y: -0.28}});
   const gaps = YRS.map(y => Math.round(nc[y].avg - st[y].avg));
-  $('#i-avg').innerHTML = `The RRNC all-site average moved ${YRS.map(y => Math.round(nc[y].avg)).join(' → ')} as sites joined and left VQB5. Among the <b>${c3.length} sites scored in all three years</b> (dashed line) it rose steadily, ${YRS.map(y => same[y].toFixed(1)).join(' → ')}, so the 2024-25 dip reflects which sites were in the data, not a decline at the same sites. RRNC has averaged ${gaps.map(g => Math.abs(g)).join(', ')} points ${gaps.every(g => g > 0) ? 'above' : 'from'} Virginia in these years, a small gap on an 800-point scale.`;
+  $('#i-avg').innerHTML = `The RRNC all-site average moved ${YRS.map(y => Math.round(nc[y].avg)).join(' → ')} from the first to the most recent year of VQB5. Among the <b>${c3.length} sites who have participated in VQB5 since the first year</b> (dashed line) it rose steadily, ${YRS.map(y => same[y].toFixed(1)).join(' → ')}, so the 2024-25 dip reflects which sites were in the data, not a decline at the same sites. RRNC has averaged ${gaps.map(g => Math.abs(g)).join(', ')} points ${gaps.every(g => g > 0) ? 'above' : 'from'} Virginia in these years.`;
   const g = x => `<span style="color:var(--mute)">${Math.round(x)}</span>`;
   $('#t-type').innerHTML = table(['Site type', ...YRS.map(y => y.slice(2)), ...YRS.map(y => y.slice(2))],
     [...TYPES.map(t => [TSHORT[t], ...YRS.map(y => Math.round(nc[y].byType[t].avg)), ...YRS.map(y => g(st[y].byType[t].avg))]),
@@ -99,7 +99,7 @@ function draw() {
 
   sankeyLevels('c-levels', ALL);
   const mv = sankeyLevels.lastMoved;
-  $('#i-sankey').innerHTML = `Between consecutive years, <b>${pc(mv.total - mv.changed, mv.total)}</b> of rated site-years stayed at the same level and <b>${pc(mv.changed, mv.total)}</b> changed level. With so many sites at one level, the Exceeds Expectations and Needs Support ribbons are thin; their counts are in the labels and in the table above.`;
+  $('#i-sankey').innerHTML = `Between consecutive years, <b>${pc(mv.total - mv.changed, mv.total)}</b> of sites stayed at the same level and <b>${pc(mv.changed, mv.total)}</b> changed level. With so many sites at one level, the Exceeds Expectations and Needs Support ribbons are thin; their counts are in the labels and in the table above.`;
 
   // --- new vs returning
   const N = S.newSites, nl = levelsFromBins(N.newBins), retL = LEVELS.map((_, i) => curL[i] - nl[i]);
