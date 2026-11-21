@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>VQB5 – CLASS Observations, North Central</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
+<body>
+<div class="hero" id="hero"><div class="wrap"></div></div>
+<main class="wrap">
+<div class="kpis" id="kpis"></div>
+
+<section><h2>What CLASS measures</h2><p class="lead">The Classroom Assessment Scoring System (CLASS) rates teacher-child interactions on a 1–7 scale: 1–2 is low, 3–5 is mid-range and 6–7 is high. VQB5 uses the Infant, Toddler and Pre-K versions, and every birth-to-five classroom is observed twice a year.</p>
+<div class="cols2">
+ <div class="card"><h3>Local observations</h3><p>Scheduled through Ready Regions and conducted by locally identified, reliable observers. Every classroom gets two a year, one in fall and one in spring, with in-person feedback to the teacher within 10 days. <b>Used for classroom-level information and coaching.</b></p></div>
+ <div class="card"><h3>External observations</h3><p>Coordinated for the state by Teachstone observers. Only some classrooms are observed, but every site gets at least one per age level, with an automated report to the site administrator. <b>Used to check accuracy and consistency across Ready Regions.</b></p></div>
+</div></section>
+
+<section><h2>Local CLASS observations: fall to spring</h2><p class="lead">Results from the observations completed by Ready Region North Central observers.</p>
+<div class="grid">
+ <div class="card"><h3>Average CLASS score, fall vs. spring</h3><p>Average total CLASS score by age level.</p><div id="c-fs" class="chart short"></div><div class="insight" id="i-fs"></div></div>
+ <div class="card"><h3>Where classrooms scored in spring 2026</h3><p>Share of classrooms in each score range.</p><div id="c-spring" class="chart short"></div><div class="insight" id="i-spring"></div></div>
+ <div class="card"><h3>Observations completed</h3><p>Number of local observations by age level and season.</p><div class="tbl" id="t-counts"></div></div>
+ <div class="card"><h3>Score ranges</h3><p>Lowest to highest classroom total score.</p><div class="tbl" id="t-range"></div></div>
+</div></section>
+
+<section><h2>External CLASS observations: North Central vs. Virginia</h2><p class="lead">Averages from third-party observers (as of June 2026). These use a different observer pool and a sample of classrooms, so they are best compared with the statewide figure, not with local scores.</p>
+<div class="row seg" id="age-seg" role="group" aria-label="Age level"></div>
+<div class="grid">
+ <div class="card"><h3>Total CLASS average by age level</h3><p id="p-total"></p><div id="c-total" class="chart short"></div></div>
+ <div class="card"><h3>Average by dimension</h3><p>Each bar is one CLASS dimension; longer is better. Negative Climate is scored the other way (lower is better) and is shown in the note below.</p><div id="c-dims" class="chart tall"></div><div class="insight" id="i-dims"></div></div>
+ <div class="card"><h3>Average by site type</h3><p id="p-site"></p><div id="c-site" class="chart short"></div></div>
+ <div class="card" id="card-domains"><h3>Average by domain</h3><p>CLASS groups dimensions into broader domains.</p><div id="c-domains" class="chart short"></div></div>
+</div>
+<p class="note" id="n-neg"></p></section>
+
+<section><h2>Coaching and professional development</h2><p class="lead">Observation results guide where the region directs support. Classrooms with a spring score below 4.00 are prioritized for coaching services in FY27.</p>
+<div class="kpis plain-kpis" id="kpis2" style="margin-top:0"></div></section>
+</main>
+<script src="common.js"></script>
+<script>
+const AGES = ['Infant', 'Toddler', 'Pre-K'];
+let age = 'Pre-K';
+const seg = $('#age-seg');
+seg.innerHTML = AGES.map(a => `<button data-a="${a}" class="${a === age ? 'on' : ''}">${a} CLASS</button>`).join('');
+seg.addEventListener('click', e => { if (!e.target.dataset.a) return; age = e.target.dataset.a; seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === e.target)); drawExternal(); });
+const f2 = v => v.toFixed(2);
+
+function draw() {
+  const L = CLASS.local, X = CLASS.external, sup = CLASS.support;
+  const fall = sum(AGES.map(a => L.counts[a][0])), spr = sum(AGES.map(a => L.counts[a][1]));
+  $('#hero .wrap').innerHTML = `<h2>${fmt(fall + spr)} local CLASS observations show classroom quality edging up from fall to spring</h2>
+    <p>The average total CLASS score rose from <b>${f2(L.total_avg[0])}</b> in fall 2025 to <b>${f2(L.total_avg[1])}</b> in spring 2026, and <b>${pc(sum(AGES.map(a => L.spring[a][3])), spr)}</b> of classrooms scored in the 5.00–7.00 range this spring.</p>`;
+  $('#kpis').innerHTML = kpis([
+    [fmt(fall + spr), `local observations (${fmt(fall)} fall, ${fmt(spr)} spring)`],
+    [f2(L.total_avg[1]), `spring average CLASS score (fall ${f2(L.total_avg[0])})`],
+    [fmt(sup.totalHours), 'hours of professional development'],
+    [fmt(sup.minutesObserved) + '+', "minutes of children's experiences observed"],
+  ]);
+
+  plot('c-fs', ['Fall 2025', 'Spring 2026'].map((s, i) => ({name: s, type: 'bar', x: AGES, y: AGES.map(a => L.avg[a][i]), text: AGES.map(a => f2(L.avg[a][i])), textposition: 'outside', cliponaxis: false,
+    marker: {color: i ? P.blue : P.lightBlue}, hovertemplate: `%{x} CLASS, ${s}: %{y:.2f}<extra></extra>`})), {barmode: 'group', yaxis: {title: 'Average total CLASS score', range: [0, 7]}});
+  const d = AGES.map(a => L.avg[a][1] - L.avg[a][0]);
+  const up = AGES.filter((a, i) => d[i] > 0), down = AGES.filter((a, i) => d[i] < 0);
+  $('#i-fs').innerHTML = `Scores rose from fall to spring for <b>${up.join(' and ')}</b> classrooms` + (down.length ? ` and dipped slightly for <b>${down.join(', ')}</b> (${f2(L.avg[down[0]][0])} → ${f2(L.avg[down[0]][1])}).` : '.');
+
+  const lbl = L.springIntervals, cols = [P.orange, '#FBC77A', P.lightBlue, P.blue];
+  plot('c-spring', lbl.map((iv, i) => ({name: iv, type: 'bar', orientation: 'h', y: AGES.map(a => a + ' (' + sum(L.spring[a]) + ')'), x: AGES.map(a => 100 * L.spring[a][i] / sum(L.spring[a])), marker: {color: cols[i]},
+    customdata: AGES.map(a => L.spring[a][i]), text: AGES.map(a => (100 * L.spring[a][i] / sum(L.spring[a])) >= 6 ? Math.round(100 * L.spring[a][i] / sum(L.spring[a])) + '%' : ''), textposition: 'inside', insidetextfont: {color: i === 3 ? '#fff' : P.ink},
+    hovertemplate: `%{y}<br>${iv}: %{customdata} classrooms (%{x:.0f}%)<extra></extra>`})),
+    {barmode: 'stack', xaxis: {title: '% of classrooms', range: [0, 100]}, yaxis: {autorange: 'reversed'}, margin: {t: 10, r: 10, b: 70, l: 110}, legend: {orientation: 'h', y: -0.35, title: {text: 'Score:  '}}});
+  const low = sum(AGES.map(a => L.spring[a][0] + L.spring[a][1]));
+  $('#i-spring').innerHTML = `<b>${fmt(low)} classrooms (${pc(low, spr)})</b> scored below 4.00 this spring and are prioritized for coaching in FY27.`;
+
+  $('#t-counts').innerHTML = table(['Age level', 'Fall 2025', 'Spring 2026', 'Total'],
+    [...AGES.map(a => [a + ' CLASS', fmt(L.counts[a][0]), fmt(L.counts[a][1]), fmt(sum(L.counts[a]))]), ['<b>Total</b>', `<b>${fmt(fall)}</b>`, `<b>${fmt(spr)}</b>`, `<b>${fmt(fall + spr)}</b>`]]);
+  $('#t-range').innerHTML = table(['Age level', 'Fall 2025', 'Spring 2026'], AGES.map(a => [a + ' CLASS', L.range[a][0], L.range[a][1]]));
+  $('#kpis2').innerHTML = kpis([[fmt(sup.taHours), 'CLASS training & technical assistance hours'], [fmt(sup.coachingHours), 'CLASS coaching hours'], [fmt(sup.totalHours), 'total professional development hours']]);
+  drawTotals();
+  drawExternal();
+}
+
+function drawTotals() {
+  const X = CLASS.external;
+  $('#p-total').textContent = 'External observations, all age levels. Classrooms observed (NC / Virginia): ' + AGES.map(a => `${a} ${fmt(X[a].n.nc)} / ${fmt(X[a].n.state)}`).join(', ') + '.';
+  plot('c-total', [{name: 'North Central', type: 'bar', x: AGES, y: AGES.map(a => X[a].total.nc), text: AGES.map(a => f2(X[a].total.nc)), textposition: 'outside', cliponaxis: false, marker: {color: P.blue}, hovertemplate: '%{x}: %{y:.2f}<extra>North Central</extra>'},
+    {name: 'Virginia', type: 'bar', x: AGES, y: AGES.map(a => X[a].total.state), text: AGES.map(a => f2(X[a].total.state)), textposition: 'outside', cliponaxis: false, marker: {color: P.grey}, hovertemplate: '%{x}: %{y:.2f}<extra>Virginia</extra>'}],
+    {barmode: 'group', yaxis: {title: 'Average total CLASS score (1–7)', range: [0, 7]}});
+}
+function drawExternal() {
+  const E = CLASS.external[age];
+  const grp = (id, labels, nc, st, title, rng, margin) => plot(id, [
+    {name: 'North Central', type: 'bar', x: nc, y: labels, orientation: 'h', marker: {color: P.blue}, text: nc.map(f2), textposition: 'outside', cliponaxis: false, hovertemplate: '%{y}: %{x:.2f}<extra>North Central</extra>'},
+    {name: 'Virginia', type: 'bar', x: st, y: labels, orientation: 'h', marker: {color: P.grey}, text: st.map(f2), textposition: 'outside', cliponaxis: false, hovertemplate: '%{y}: %{x:.2f}<extra>Virginia</extra>'}],
+    {barmode: 'group', xaxis: {title, range: rng || [0, 7.6]}, yaxis: {autorange: 'reversed', ticklabelstandoff: 8}, margin: margin || {t: 10, r: 20, b: 70, l: 190}});
+  grp('c-dims', E.dims.map(x => x[0]), E.dims.map(x => x[1]), E.dims.map(x => x[2]), 'Average score (1–7)', null, {t: 10, r: 30, b: 70, l: 230});
+  const lo = [...E.dims].sort((a, b) => a[1] - b[1]), hi = lo[lo.length - 1];
+  const gaps = E.dims.map(x => [x[0], x[1] - x[2]]).sort((a, b) => a[1] - b[1]);
+  $('#i-dims').innerHTML = `Highest: <b>${hi[0]}</b> (${f2(hi[1])}). Lowest: <b>${lo[0][0]}</b> (${f2(lo[0][1])}), the main area for growth. Largest gap vs. state: <b>${gaps[0][0]}</b> (${gaps[0][1].toFixed(2)}).`;
+  const sites = Object.entries(E.site);
+  $('#p-site').textContent = age === 'Infant' ? 'Infant averages are shown for centers only; other site types have too few observations to report.' : 'Site types with too few observations for a reliable average are omitted.';
+  grp('c-site', sites.map(([t]) => TLABEL[t]), sites.map(([, v]) => v[0]), sites.map(([, v]) => v[1]), 'Average score (1–7)', null, {t: 10, r: 20, b: 70, l: 170});
+  $('#card-domains').style.display = E.domains ? '' : 'none';
+  if (E.domains) grp('c-domains', E.domains.map(x => x[0]), E.domains.map(x => x[1]), E.domains.map(x => x[2]), 'Average score (1–7)', null, {t: 10, r: 20, b: 70, l: 210});
+  $('#n-neg').textContent = E.negClimate ? `Negative Climate (lower is better): North Central ${f2(E.negClimate.nc)}, Virginia ${f2(E.negClimate.state)}.` : 'The infant tool has four dimensions and no Negative Climate dimension.';
+}
+init('class', draw, {filters: false, class: true});
+</script></body></html>

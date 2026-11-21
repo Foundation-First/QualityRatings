@@ -1,15 +1,26 @@
-// Shared data loading, filter bar and chart helpers for all pages.
+// Shared data loading, filter bar, brand palette and chart helpers for all pages.
+const P = {blue: '#11689B', navy: '#0E3F66', green: '#99CA3C', greenD: '#6FA82B', orange: '#F7941D', grey: '#98999B', lightBlue: '#9CC3DB', ink: '#23323f', grid: '#e9eef2'};
 const RATINGS = ['Needs Support', 'Meets Expectations', 'Exceeds Expectations'];
-const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const rcolor = r => css({'Needs Support': '--needs', 'Meets Expectations': '--meets', 'Exceeds Expectations': '--exceeds'}[r]);
+const RCOLOR = {'Needs Support': P.orange, 'Meets Expectations': P.lightBlue, 'Exceeds Expectations': P.greenD};
+const rcolor = r => RCOLOR[r];
+const TYPES = ['Center', 'Public School', 'Family Day Home'];
+const TLABEL = {Center: 'Child care centers', 'Public School': 'Public schools', 'Family Day Home': 'Home-based child care'};
+const TCOLOR = {Center: P.blue, 'Public School': '#6B7F91', 'Family Day Home': P.green};
+const AGE_COLOR = {Infant: P.green, Toddler: P.orange, 'Pre-K': P.blue};
+const css = n => ({'--accent': P.blue, '--meets': P.lightBlue, '--grid': P.grid, '--ink': P.ink, '--exceeds': P.greenD, '--needs': P.orange, '--mute': '#5b6b78'}[n]);
 const $ = s => document.querySelector(s);
 const sum = a => a.reduce((x, y) => x + y, 0);
 const mean = a => a.length ? sum(a) / a.length : null;
 const fmt = n => n == null ? '–' : n.toLocaleString();
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const pc = (v, n) => { if (!n) return '–'; const p = 100 * v / n; return p > 0 && p < 1 ? '<1%' : Math.round(p) + '%'; };
+const table = (head, rows, numFrom = 1) => `<table><thead><tr>${head.map((h, i) => `<th class="${i >= numFrom ? 'n' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i >= numFrom ? 'n' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+const kpis = items => items.map(([b, s]) => `<div class="kpi"><b>${b}</b><span>${s}</span></div>`).join('');
+async function loadJSON(name) { return (await fetch('data/' + name + '.json')).json(); }
+
 let state = {};
 try { state = JSON.parse(sessionStorage.getItem('vqb5f') || '{}'); } catch (e) {}
-let DATA, SUMMARY, ALL, FILTERED = [], onChange = () => {};
+let DATA, SUMMARY, CLASS, ALL, FILTERED = [], onChange = () => {};
 
 const FILTERS = [
   ['county', 'Locality', s => [s.county]],
@@ -32,8 +43,8 @@ function match(s, skip) {
 }
 
 function buildFilters() {
-  const box = $('#filters .wrap');
-  box.innerHTML = '<label>Search name / address<input type="search" id="f-q" placeholder="e.g. Little Stars, 23219"></label>';
+  const box = $('#filters .grid-f');
+  box.innerHTML = '<label>Search name or address<input type="search" id="f-q" placeholder="e.g. Little Stars, 22030"></label>';
   for (const [k, label] of FILTERS) box.insertAdjacentHTML('beforeend', `<label>${label}<select id="f-${k}"></select></label>`);
   box.insertAdjacentHTML('beforeend', '<button id="reset">Reset filters</button>');
   $('#f-q').value = state.q || '';
@@ -60,42 +71,41 @@ function update() {
   refreshOptions();
   FILTERED = ALL.filter(s => match(s));
   try { sessionStorage.setItem('vqb5f', JSON.stringify(state)); } catch (e) {}
-  $('#count').textContent = `${FILTERED.length.toLocaleString()} of ${ALL.length.toLocaleString()} sites`;
+  $('#count').textContent = `Showing ${FILTERED.length.toLocaleString()} of ${ALL.length.toLocaleString()} sites`;
   onChange();
 }
 
 function plot(id, traces, layout = {}) {
   const base = {
-    margin: {t: 10, r: 10, b: 40, l: 50}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-    font: {color: css('--ink'), size: 12}, legend: {orientation: 'h', y: -0.2},
-    xaxis: {gridcolor: css('--grid'), automargin: true}, yaxis: {gridcolor: css('--grid'), automargin: true},
+    margin: {t: 10, r: 12, b: 70, l: 50}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: {family: "'Nunito Sans',system-ui,sans-serif", color: P.ink, size: 13}, legend: {orientation: 'h', y: -0.3},
+    xaxis: {gridcolor: P.grid, automargin: true, zeroline: false}, yaxis: {gridcolor: P.grid, automargin: true, zeroline: false},
+    hoverlabel: {font: {family: "'Nunito Sans',system-ui,sans-serif"}},
   };
   const lay = {...base, ...layout, xaxis: {...base.xaxis, ...(layout.xaxis || {})}, yaxis: {...base.yaxis, ...(layout.yaxis || {})}};
   Plotly.react(id, traces, lay, {displayModeBar: false, responsive: true});
 }
 
+// page: nav key; cb: draw function; opts.data = names of extra JSON files to load (as SUMMARY / CLASS); opts.filters=false hides filter bar
 async function init(page, cb, opts = {}) {
   onChange = cb;
   document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.dataset.p === page));
-  if (opts.filters === false) {            // summary page: fixed region-wide view, no filter bar
-    $('#filters').remove(); $('#count').textContent = '';
-    SUMMARY = await (await fetch('data/summary.json')).json();
-    cb();
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', cb);
-    return;
-  }
+  if (opts.summary) SUMMARY = await loadJSON('summary');
+  if (opts.class) CLASS = await loadJSON('class');
+  if (opts.filters === false) { $('#filters').remove(); cb(); return; }
   buildFilters();
-  DATA = await (await fetch('data/sites.json')).json();
+  DATA = await loadJSON('sites');
   ALL = DATA.sites;
   update();
-  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', update);
 }
 
-const NAV = `<header><div class="wrap"><h1>VQB5 Quality Ratings · Ready Region 8 North Central</h1><nav>
-<a data-p="summary" href="index.html">Summary</a><a data-p="overview" href="ratings.html">Ratings explorer</a><a data-p="trends" href="trends.html">Trends</a>
-<a data-p="programs" href="programs.html">Curriculum &amp; funding</a><a data-p="sites" href="sites.html">Site finder</a></nav>
-<span id="count" class="note"></span></div></header><div id="filters"><div class="wrap"></div></div>`;
-const FOOT = `<footer class="wrap">Data: <a href="https://earlychildhoodquality.doe.virginia.gov/quality-ratings/">Virginia Department of Education, VQB5 Quality Rating Data 2025-2026</a>
-(includes 2024-25 and 2023-24 results for continuing sites). Shows Ready Region 8 – North Central; statewide figures are aggregates for comparison only. This is an independent visualization, not affiliated with VDOE; check the VDOE site for official data.</footer>`;
+const NAV = `<div class="stripe"></div><header><div class="wrap">
+<div class="brand"><img src="img/ff-logo.png" alt="Foundation First – Building Early Childhood Success"><h1>VQB5 Quality Ratings Dashboard<small>Ready Region North Central · 2025-26 program year</small></h1>
+<div class="logos"><img class="rr" src="img/rrnc-logo.png" alt="Ready Region North Central" style="height:52px"></div></div>
+<nav><a data-p="summary" href="index.html">Summary</a><a data-p="class" href="class.html">CLASS observations</a><a data-p="overview" href="ratings.html">Explore ratings</a>
+<a data-p="trends" href="trends.html">Trends</a><a data-p="programs" href="programs.html">Curriculum &amp; funding</a><a data-p="sites" href="sites.html">Find a site</a></nav></div></header>
+<div id="filters"><div class="wrap"><div class="bar"><b>Filter these charts</b><span id="count"></span></div><div class="grid-f"></div></div></div>`;
+const FOOT = `<footer class="wrap">Source: <a href="https://earlychildhoodquality.doe.virginia.gov/quality-ratings/">Virginia Department of Education VQB5 Quality Rating Data</a> (2023-24 to 2025-26) and Ready Region North Central CLASS and coaching summaries. Statewide figures are aggregates shown for comparison. This is an independent visualization; VDOE's published data is the official record.</footer>`;
+document.head.insertAdjacentHTML('beforeend', '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap">');
 document.body.insertAdjacentHTML('afterbegin', NAV);
 document.body.insertAdjacentHTML('beforeend', FOOT);

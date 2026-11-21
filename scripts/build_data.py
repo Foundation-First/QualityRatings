@@ -49,10 +49,24 @@ for y, df in years.items():
 for y in ('2024-25', '2025-26'):
     summary['honor'][y] = honor(years[y][years[y].region == REGION])
     summary['honorStatewide'][y] = honor(years[y])
-json.dump(summary, open('site/data/summary.json', 'w'), separators=(',', ':'))
 
 # ---- site-level records: North Central only ----
 a = a[a['RegionName'] == REGION]
+
+# ---- extra North Central breakdowns for the Summary page ----
+BINS = ['399 or less', '400-499', '500-599', '600-699', '700-800']
+cut = pd.cut(a.TotalPts, [0, 399, 499, 599, 699, 800], labels=BINS)
+summary['bins'] = dict(labels=BINS, byType={t: [int(((a.SiteType == t) & (cut == b)).sum()) for b in BINS] for t in TYPES})
+summary['typeRatings'] = {t: {r: int(((a.SiteType == t) & (a.QualityRating == r)).sum()) for r in RATINGS} for t in TYPES}
+is_new = a['Quality Rating: 2024-2025'].isna()
+summary['newSites'] = dict(
+    n=int(is_new.sum()), byType={t: int(((a.SiteType == t) & is_new).sum()) for t in TYPES},
+    avgNew=round(float(a[is_new].TotalPts.mean()), 1), avgReturning=round(float(a[~is_new].TotalPts.mean()), 1),
+    returningPrev=round(float(a[~is_new]['Total Points: 2024-2025'].mean()), 1), nReturning=int((~is_new).sum()),
+    newBins=[int(((cut == b) & is_new).sum()) for b in BINS])
+using = ~a.CurriculumUse.fillna('').str.contains('did not report')
+summary['curriculumUse'] = {t: dict(using=int(((a.SiteType == t) & using).sum()), total=int((a.SiteType == t).sum())) for t in TYPES}
+json.dump(summary, open('site/data/summary.json', 'w'), separators=(',', ':'))
 
 def num(v): return None if pd.isna(v) else int(v)
 def txt(v): return None if pd.isna(v) else str(v).strip()
@@ -73,6 +87,7 @@ for r in a.to_dict('records'):
         rating=txt(r['QualityRating']), ip=num(r['InteractionPts']), cp=num(r['CurriculumPts']), tp=num(r['TotalPts']),
         honor=lst(r['Honor Roll'], r',\s*'), rooms=rooms, ages=', '.join(rooms) or 'Not reported',
         fund=lst(r['PublicFundingSources'], r',\s*'), curr=lst(r['CurriculumNamesUnique'], r';\s*'),
+        cu='did not report' not in str(r['CurriculumUse']),
         hist={y: h for y, h in hist.items() if h['rating']},
     ))
 

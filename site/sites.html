@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>VQB5 Quality Ratings – Site finder</title><link rel="stylesheet" href="style.css"></head>
-<body><main class="wrap"><div class="card">
+<body><main class="wrap"><section><h2>Find a site</h2><p class="lead">Search for a specific program, or filter and sort the list. Click a column heading to sort, and download your filtered list as a CSV.</p></section><div class="card">
 <div class="row"><span id="pg" class="note"></span><button id="prev">‹ Prev</button><button id="next">Next ›</button><button id="csv">Download filtered CSV</button></div>
 <div class="tbl"><table><thead><tr id="head"></tr></thead><tbody id="body"></tbody></table></div>
 </div></main>
@@ -10,7 +10,7 @@
 const COLS = [['name', 'Site'], ['county', 'Locality'], ['type', 'Type'], ['rating', 'Rating'], ['tp', 'Total pts'], ['ip', 'Interaction pts'], ['cp', 'Curriculum pts'], ['rooms', 'Ages'], ['honor', 'Honor roll']];
 const PAGE = 50; let page = 0, sortK = 'name', sortDir = 1;
 const val = (s, k) => Array.isArray(s[k]) ? s[k].join('; ') : s[k];
-$('#head').innerHTML = COLS.map(([k, l]) => `<th data-k="${k}">${l}</th>`).join('');
+$('#head').innerHTML = COLS.map(([k, l]) => `<th class="sortable" data-k="${k}">${l}</th>`).join('');
 $('#head').onclick = e => { const k = e.target.dataset.k; if (!k) return; sortDir = sortK === k ? -sortDir : 1; sortK = k; page = 0; draw(); };
 $('#prev').onclick = () => { page = Math.max(0, page - 1); draw(); };
 $('#next').onclick = () => { page++; draw(); };

@@ -2,16 +2,16 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>VQB5 Ratings Explorer – North Central</title><link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
-<body><main class="wrap">
+<body><main class="wrap"><section><h2>Explore ratings</h2><p class="lead">Filter by locality, site type, rating, age group, funding, honor roll or curriculum. Every chart on this page updates to match. Use “Reset filters” to start over.</p></section>
 <div class="kpis" id="kpis"></div>
 <div class="grid">
- <div class="card"><h2>Ratings by age group served</h2><p>About 98% of sites Meet Expectations, so the default view zooms in on the sites at either end.</p>
+ <div class="card"><h3>Ratings by age group served</h3><p>About 98% of sites Meet Expectations, so the default view zooms in on the sites at either end.</p>
   <div class="row seg"><button data-m="out" class="on">Exceeds &amp; Needs Support (%)</button><button data-m="count">All ratings (count)</button><button data-m="pct">All ratings (%)</button></div><div id="c-ages" class="chart"></div></div>
- <div class="card"><h2>Ratings by site type</h2><p>Centers, public schools and family day homes.</p>
+ <div class="card"><h3>Ratings by site type</h3><p>Centers, public schools and family day homes.</p>
   <div class="row seg"><button data-m="out" class="on">Exceeds &amp; Needs Support (%)</button><button data-m="count">All ratings (count)</button><button data-m="pct">All ratings (%)</button></div><div id="c-type" class="chart"></div></div>
- <div class="card"><h2>Distribution of total points</h2><p>Interaction points (CLASS) plus curriculum points, one count per site.</p><div id="c-hist" class="chart"></div></div>
- <div class="card"><h2>Interaction points by site type</h2><p>Box = middle 50% of sites; line = median.</p><div id="c-box" class="chart"></div></div>
- <div class="card" style="grid-column:1/-1"><h2>Localities: sites and share rated Exceeds / Needs Support</h2><p>Top 25 localities by number of sites in the current selection.</p><div id="c-county" class="chart tall"></div></div>
+ <div class="card"><h3>Distribution of total points</h3><p>Interaction points (CLASS) plus curriculum points, one count per site.</p><div id="c-hist" class="chart"></div></div>
+ <div class="card"><h3>Interaction points by site type</h3><p>Box = middle 50% of sites; line = median.</p><div id="c-box" class="chart"></div></div>
+ <div class="card" style="grid-column:1/-1"><h3>Localities: sites and share rated Exceeds / Needs Support</h3><p>Top 25 localities by number of sites in the current selection.</p><div id="c-county" class="chart tall"></div></div>
 </div></main>
 <script src="common.js"></script>
 <script>

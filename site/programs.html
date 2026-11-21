@@ -2,13 +2,15 @@
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>VQB5 Quality Ratings – Curriculum &amp; funding</title><link rel="stylesheet" href="style.css">
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
-<body><main class="wrap">
+<body><main class="wrap"><section><h2>Curriculum, funding and who sites serve</h2><p class="lead">What sites use, how they are funded, and which age groups they serve. Filters apply to the first set of charts; the classroom-level chart is region-wide.</p></section>
 <div class="grid">
- <div class="card"><h2>Curricula in use</h2><p>Number of sites in the selection reporting each curriculum (top 20; a site can list several).</p><div id="c-curr" class="chart tall"></div></div>
- <div class="card"><h2>Public funding sources</h2><p>Sites in the selection receiving each source (a site can have several).</p><div id="c-fund" class="chart tall"></div></div>
- <div class="card"><h2>Age groups served</h2><p>Classroom age groups per site (a site can serve several).</p><div id="c-rooms" class="chart"></div></div>
- <div class="card"><h2>Rating mix by funding source</h2><p>Share of each rating among sites receiving that source.</p><div id="c-fr" class="chart"></div></div>
- <div class="card"><h2>Honor roll designations</h2><p>Excellence, Improvement and Infant/Toddler honor roll counts.</p><div id="c-honor" class="chart"></div></div>
+ <div class="card"><h3>Approved curriculum use by site type</h3><p>Sites in the selection using a VDOE-approved curriculum in at least one classroom.</p><div id="c-cu" class="chart short"></div><div class="insight" id="i-cu"></div></div>
+ <div class="card"><h3>Approved curriculum use by classroom age level (region-wide)</h3><p>Classrooms using an approved curriculum as of June 3, 2026. Not affected by filters.</p><div id="c-cr" class="chart short"></div><div class="insight" id="i-cr"></div></div>
+ <div class="card"><h3>Curricula in use</h3><p>Number of sites in the selection reporting each curriculum (top 20; a site can list several).</p><div id="c-curr" class="chart tall"></div></div>
+ <div class="card"><h3>Public funding sources</h3><p>Sites in the selection receiving each source (a site can have several).</p><div id="c-fund" class="chart tall"></div></div>
+ <div class="card"><h3>Age groups served</h3><p>Classroom age groups per site (a site can serve several).</p><div id="c-rooms" class="chart"></div></div>
+ <div class="card"><h3>Rating mix by funding source</h3><p>Share of each rating among sites receiving that source.</p><div id="c-fr" class="chart"></div></div>
+ <div class="card"><h3>Honor roll designations</h3><p>Excellence, Improvement and Infant/Toddler honor roll counts.</p><div id="c-honor" class="chart"></div></div>
 </div></main>
 <script src="common.js"></script>
 <script>
@@ -20,6 +22,17 @@ function hbar(id, counts, n, left) {
 }
 function draw() {
   const F = FILTERED;
+  const using = TYPES.map(t => F.filter(x => x.type === t && x.cu).length), not = TYPES.map(t => F.filter(x => x.type === t && !x.cu).length);
+  plot('c-cu', [{name: 'Using approved curriculum', type: 'bar', orientation: 'h', y: TYPES.map(t => TLABEL[t]), x: using, marker: {color: P.blue}, hovertemplate: '%{y}: %{x} sites using<extra></extra>'},
+                {name: 'Not using', type: 'bar', orientation: 'h', y: TYPES.map(t => TLABEL[t]), x: not, marker: {color: P.orange}, hovertemplate: '%{y}: %{x} sites not using<extra></extra>'}],
+    {barmode: 'stack', xaxis: {title: 'Sites'}, yaxis: {autorange: 'reversed'}, margin: {t: 10, r: 10, b: 70, l: 150}});
+  $('#i-cu').innerHTML = F.length ? `<b>${pc(sum(using), F.length)}</b> of the ${F.length.toLocaleString()} sites in this selection use an approved curriculum.` : 'No sites match these filters.';
+  const cr = CLASS.curriculumClassrooms, ages = Object.keys(cr);
+  plot('c-cr', [{name: 'Using approved curriculum', type: 'bar', orientation: 'h', y: ages.map(a => a + ' classrooms'), x: ages.map(a => cr[a][0]), marker: {color: P.blue}, hovertemplate: '%{y}: %{x} using<extra></extra>'},
+                {name: 'Not using', type: 'bar', orientation: 'h', y: ages.map(a => a + ' classrooms'), x: ages.map(a => cr[a][1] - cr[a][0]), marker: {color: P.orange}, hovertemplate: '%{y}: %{x} not using<extra></extra>'}],
+    {barmode: 'stack', xaxis: {title: 'Classrooms'}, yaxis: {autorange: 'reversed'}, margin: {t: 10, r: 10, b: 70, l: 150}});
+  const cu = sum(ages.map(a => cr[a][0])), ct = sum(ages.map(a => cr[a][1]));
+  $('#i-cr').innerHTML = `<b>${pc(cu, ct)}</b> of ${ct.toLocaleString()} classrooms use an approved curriculum; Pre-K classrooms are at ${pc(cr['Pre-K'][0], cr['Pre-K'][1])}.`;
   hbar('c-curr', countBy(F, s => s.curr), 20, 300);
   hbar('c-fund', countBy(F, s => s.fund), 15, 230);
   hbar('c-rooms', countBy(F, s => s.rooms), 5, 80);
@@ -29,5 +42,5 @@ function draw() {
     x: keys.map(k => { const g = F.filter(s => s.fund.includes(k)); return g.length ? 100 * g.filter(s => s.rating === r).length / g.length : 0; }),
     hovertemplate: `%{y}<br>${r}: %{x:.1f}%<extra></extra>`})), {barmode: 'stack', xaxis: {title: '% of sites', range: [0, 100]}, margin: {t: 10, r: 10, b: 70, l: 230}});
 }
-init('programs', draw);
+init('programs', draw, {class: true});
 </script></body></html>
