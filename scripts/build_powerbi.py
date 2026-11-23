@@ -71,42 +71,46 @@ if not KEEP_TABLES:
 # ---------------------------------------------------------------- measures
 PS, SO, PY = "'Published Scores'", "'Sites-Orgs'", "'Program Year'"
 MEAS = [
- ('Latest Start', '0', f"""MAXX(FILTER(ALL({PY}), CALCULATE(COUNTROWS({PS}), REMOVEFILTERS({PS})) > 0), {PY}[cr720_startdate])"""),
- ('Sites rated', '0', f"""VAR ls = [Latest Start]
-RETURN CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), {PY}[cr720_startdate] = ls)"""),
- ('Average points', '0', f"""VAR ls = [Latest Start]
-RETURN CALCULATE(AVERAGE({PS}[cr720_totalpoints]), {PY}[cr720_startdate] = ls)"""),
- ('RRNC average points', '0', f"""VAR ls = [Latest Start]
-RETURN CALCULATE(AVERAGE({PS}[cr720_totalpoints]), REMOVEFILTERS({PS}), {PY}[cr720_startdate] = ls)"""),
+ ('Latest Year', None, f"""MAXX(FILTER(ALL({PY}), CALCULATE(COUNTROWS({PS}), REMOVEFILTERS({PS})) > 0), {PY}[cr720_name])"""),
+ ('Sites rated', '0', f"""VAR ly = [Latest Year]
+RETURN CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), {PY}[cr720_name] = ly)"""),
+ ('Average points', '0', f"""VAR ly = [Latest Year]
+RETURN CALCULATE(AVERAGE({PS}[cr720_totalpoints]), {PY}[cr720_name] = ly)"""),
+ ('RRNC average points', '0', f"""VAR ly = [Latest Year]
+RETURN CALCULATE(AVERAGE({PS}[cr720_totalpoints]), REMOVEFILTERS({PS}), {PY}[cr720_name] = ly)"""),
  ('Virginia type', None, f"""VAR t = SELECTEDVALUE({SO}[cr720_providertypename])
 RETURN IF(ISBLANK(t), "All", SWITCH(TRUE(),
     CONTAINSSTRING(t, "Public"), "Public School",
     CONTAINSSTRING(t, "Home") || CONTAINSSTRING(t, "Family"), "Family Day Home",
     CONTAINSSTRING(t, "Center"), "Center", "All"))"""),
- ('Virginia average points', '0', """CALCULATE(MAX(Virginia[AvgPoints]), Virginia[StartYear] = MAX(Virginia[StartYear]), Virginia[Type] = [Virginia type])"""),
+ ('Virginia average points', '0', """VAR yr = MAX(Virginia[StartYear])
+VAR vt = [Virginia type]
+RETURN CALCULATE(MAX(Virginia[AvgPoints]), Virginia[StartYear] = yr, Virginia[Type] = vt)"""),
  ('Gap vs RRNC', '+0;-0;0', """[Average points] - [RRNC average points]"""),
  ('Gap vs Virginia', '+0;-0;0', """[Average points] - [Virginia average points]"""),
  ('Group average by year', '0', f"""AVERAGE({PS}[cr720_totalpoints])"""),
  ('RRNC average by year', '0', f"""CALCULATE(AVERAGE({PS}[cr720_totalpoints]), REMOVEFILTERS({PS}))"""),
  ('Virginia average by year', '0', """VAR sy = VALUE(LEFT(SELECTEDVALUE('Program Year'[cr720_name]), 4))
-RETURN CALCULATE(MAX(Virginia[AvgPoints]), Virginia[StartYear] = sy, Virginia[Type] = [Virginia type])"""),
+VAR vt = [Virginia type]
+RETURN CALCULATE(MAX(Virginia[AvgPoints]), Virginia[StartYear] = sy, Virginia[Type] = vt)"""),
  ('Total points', '0', f"""MAX({PS}[cr720_totalpoints])"""),
  ('Group rating level', None, f"""VAR lvl = SELECTEDVALUE('Rating Levels'[Level])
-VAR ls = [Latest Start]
-VAR n = COALESCE(CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), {PY}[cr720_startdate] = ls, {PS}[cr720_qualityrating] = lvl), 0)
+VAR ly = [Latest Year]
+VAR n = COALESCE(CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), {PY}[cr720_name] = ly, {PS}[cr720_qualityrating] = lvl), 0)
 RETURN n & " (" & FORMAT(DIVIDE(n, [Sites rated], 0), "0%") & ")\""""),
  ('RRNC rating level', None, f"""VAR lvl = SELECTEDVALUE('Rating Levels'[Level])
-VAR ls = [Latest Start]
-VAR tot = CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), REMOVEFILTERS({PS}), {PY}[cr720_startdate] = ls)
-VAR n = COALESCE(CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), REMOVEFILTERS({PS}), {PY}[cr720_startdate] = ls, {PS}[cr720_qualityrating] = lvl), 0)
+VAR ly = [Latest Year]
+VAR tot = CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), REMOVEFILTERS({PS}), {PY}[cr720_name] = ly)
+VAR n = COALESCE(CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), REMOVEFILTERS({PS}), {PY}[cr720_name] = ly, {PS}[cr720_qualityrating] = lvl), 0)
 RETURN n & " (" & FORMAT(DIVIDE(n, tot, 0), "0%") & ")\""""),
  ('Virginia rating level', None, """VAR lvl = SELECTEDVALUE('Rating Levels'[Level])
 VAR yr = MAX(Virginia[StartYear])
-VAR tot = CALCULATE(MAX(Virginia[Sites]), Virginia[StartYear] = yr, Virginia[Type] = [Virginia type])
+VAR vt = [Virginia type]
+VAR tot = CALCULATE(MAX(Virginia[Sites]), Virginia[StartYear] = yr, Virginia[Type] = vt)
 VAR n = SWITCH(lvl,
-    "Needs Support", CALCULATE(MAX(Virginia[Needs]), Virginia[StartYear] = yr, Virginia[Type] = [Virginia type]),
-    "Meets Expectations", CALCULATE(MAX(Virginia[Meets]), Virginia[StartYear] = yr, Virginia[Type] = [Virginia type]),
-    "Exceeds Expectations", CALCULATE(MAX(Virginia[Exceeds]), Virginia[StartYear] = yr, Virginia[Type] = [Virginia type]))
+    "Needs Support", CALCULATE(MAX(Virginia[Needs]), Virginia[StartYear] = yr, Virginia[Type] = vt),
+    "Meets Expectations", CALCULATE(MAX(Virginia[Meets]), Virginia[StartYear] = yr, Virginia[Type] = vt),
+    "Exceeds Expectations", CALCULATE(MAX(Virginia[Exceeds]), Virginia[StartYear] = yr, Virginia[Type] = vt))
 RETURN n & " (" & FORMAT(DIVIDE(n, tot, 0), "0%") & ")\""""),
  ('Report title', None, f"""IF(ISFILTERED({PS}[cr720_sitename]), SELECTEDVALUE({PS}[cr720_sitename], "Selected sites"),
     IF(ISFILTERED({PS}[cr720_county]), SELECTEDVALUE({PS}[cr720_county], "Selected localities"), "Ready Region North Central"))
@@ -125,6 +129,9 @@ t = re.sub(r"(?m)^\tmeasure '(?:" + '|'.join(re.escape(n) for n, _, _ in MEAS) +
 i = t.index("\n\tpartition 'Published Scores'")
 t = t[:i].rstrip('\n') + '\n\n' + ('\n'.join(blk) if STAGE >= 2 else '') + t[i:]
 pp.write_text(t, encoding='utf-8')
+if '--measures-only' in sys.argv:
+    print('Measures updated in', pp)
+    raise SystemExit
 
 # ---------------------------------------------------------------- report page
 NAVY, GREEN, INK = '#0E3F66', '#6FA82B', '#23323f'
