@@ -50,19 +50,14 @@ for y, df in years.items():
     summary['years'][y] = aggregate(df[df.region == REGION])
     summary['statewide'][y] = aggregate(df)
 def roster(prev_df, cur_df):
-    # Sites are followed with the earlier-year points VDOE lists beside each site (site ID numbers change between years).
-    # Sites that left are not in the later file, so their count and average come from the totals of the earlier year
-    # minus the continuing sites' earlier-year points.
+    # Sites are followed with the earlier-year points VDOE lists beside each site (site ID numbers change between years):
+    # a site with earlier-year points is "returning", one without is "new".
     out = {}
     for key in ['all'] + TYPES:
-        pv = prev_df if key == 'all' else prev_df[prev_df.type == key]
         cu = cur_df if key == 'all' else cur_df[cur_df.type == key]
         cont, new = cu[cu.prev.notna()], cu[cu.prev.isna()]
-        left_n = max(0, len(pv) - len(cont))
-        left_avg = (pv.tp.sum() - cont.prev.sum()) / left_n if left_n else None
         r1 = lambda v: None if v is None or pd.isna(v) else round(float(v), 1)
-        out[key] = dict(n=int(len(cu)), cont=dict(n=int(len(cont)), avg=r1(cont.tp.mean()), prevAvg=r1(cont.prev.mean())),
-                        new=dict(n=int(len(new)), avg=r1(new.tp.mean())), left=dict(n=int(left_n), avgPrev=r1(left_avg)))
+        out[key] = dict(n=int(len(cu)), cont=dict(n=int(len(cont)), avg=r1(cont.tp.mean())), new=dict(n=int(len(new)), avg=r1(new.tp.mean())))
     return out
 def rr(y): return years[y][years[y].region == REGION]
 summary['roster'] = {'2024-25': roster(rr('2023-24'), rr('2024-25')), '2025-26': roster(rr('2024-25'), rr('2025-26'))}

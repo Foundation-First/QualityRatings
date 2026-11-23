@@ -41,9 +41,9 @@ function draw() {
   const subject = type ? TLABEL[type] : 'RRNC sites', who = {'': 'sites', Center: 'centers', 'Public School': 'public-school sites', 'Family Day Home': 'home-based programs'}[type];
   const r = Math.round;
   $('#answer').innerHTML = `${subject} averaged ${r(all[0])} points in 2023-24, ${r(all[1])} in 2024-25 and ${r(all[2])} in 2025-26. ` +
-    (c.length ? `The ${c.length} ${who} that took part in all three years averaged ${r(same[0])}, ${r(same[1])} and ${r(same[2])}.` : '');
+    (c.length ? `The ${c.length} ${who} that have participated since 2023-24 averaged ${r(same[0])}, ${r(same[1])} and ${r(same[2])}.` : '');
   const line = (name, y, color, extra) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y, text: y.map(v => r(v)), line: {color, width: 3, ...extra}, marker: {size: 9}, hovertemplate: `%{x}: %{y:.0f}<extra>${name}</extra>`});
-  const series = [line('RRNC, all sites that year', all, P.rrnc), line(`RRNC, same ${c.length} sites each year`, same, P.greenDD, {dash: 'dash', width: 2}), line('Virginia, all sites', va, P.grey)];
+  const series = [line('RRNC, all sites that year', all, P.rrnc), line(`RRNC, participating since 2023-24 (${c.length} sites)`, same, P.greenDD, {dash: 'dash', width: 2}), line('Virginia, all sites', va, P.grey)];
   placeLabels(series);
   const vals = series.flatMap(s => s.y);
   plot('c-line', series, {yaxis: {title: 'Average points', range: [Math.min(...vals) - 7, Math.max(...vals) + 7]}, legend: {orientation: 'h', y: -0.3}, margin: {t: 20, r: 60, b: 90, l: 55}});
@@ -55,8 +55,7 @@ function draw() {
   $('#t-roster').innerHTML = table(['', '24-25', '25-26'], [
     ['Sites', ...R.map(x => x.n)],
     ['Returning from the year before (avg score this year)', ...R.map(x => cell(x.cont, 'avg'))],
-    ['New this year (avg score this year)', ...R.map(x => cell(x.new, 'avg'))],
-    ['Left after the year before (avg score the year before)', ...R.map(x => cell(x.left, 'avgPrev'))]]);
+    ['New this year (avg score this year)', ...R.map(x => cell(x.new, 'avg'))]]);
 }
 init('time', draw, {filters: false, sites: true, summary: true});
 </script></body></html>
