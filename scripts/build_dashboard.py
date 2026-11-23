@@ -91,11 +91,13 @@ def add(template, x, y, w, h):
     return j, d
 
 
-def section_filter(section):
+def detail_filter(prop, values):
+    """Visual-level filter: Detail[prop] is one of values."""
     ent = {'Name': 'd', 'Entity': 'Detail', 'Type': 0}
-    fld = {'Column': {'Expression': {'SourceRef': {'Entity': 'Detail'}}, 'Property': 'Section'}}
-    cond = {'Column': {'Expression': {'SourceRef': {'Source': 'd'}}, 'Property': 'Section'}}
-    return {'filters': [{'name': uuid.uuid4().hex[:20], 'field': fld, 'type': 'Categorical', 'filter': {'Version': 2, 'From': [ent], 'Where': [{'Condition': {'In': {'Expressions': [cond], 'Values': [[{'Literal': {'Value': "'" + section + "'"}}]]}}}]}, 'howCreated': 'User'}]}
+    fld = {'Column': {'Expression': {'SourceRef': {'Entity': 'Detail'}}, 'Property': prop}}
+    cond = {'Column': {'Expression': {'SourceRef': {'Source': 'd'}}, 'Property': prop}}
+    vals = [[{'Literal': {'Value': "'" + v + "'"}}] for v in values]
+    return {'filters': [{'name': uuid.uuid4().hex[:20], 'field': fld, 'type': 'Categorical', 'filter': {'Version': 2, 'From': [ent], 'Where': [{'Condition': {'In': {'Expressions': [cond], 'Values': vals}}}]}, 'howCreated': 'User'}]}
 
 
 # ---- Deneb charts
@@ -106,14 +108,14 @@ BASE = {'$schema': 'https://vega.github.io/schema/vega-lite/v5.json', 'data': {'
         'config': {'view': {'stroke': None}, 'font': 'Segoe UI', 'axis': {'labelColor': '#23323F', 'labelFontSize': 12}}}
 
 
-def deneb(x, y, w, h, title, category, series, spec, section=None):
+def deneb(x, y, w, h, title, category, series, spec, only=None):
     j, d = add(deneb_tpl, x, y, w, h)
     j['visual']['query'] = {'queryState': {'dataset': {'projections': [category] + series}}}
     lit = lambda t: L("'" + t.replace("'", "''") + "'")
     j['visual']['objects'] = {'vega': [{'properties': {'provider': lit('vegaLite'), 'renderMode': lit('svg'), 'jsonSpec': lit(json.dumps(spec)), 'jsonConfig': lit('{}'), 'isNewDialogOpen': L('false')}}]}
     j['visual']['visualContainerObjects'] = {'title': [{'properties': {'show': L('true'), 'text': L("'" + title + "'")}}]}
-    if section:
-        j['filterConfig'] = section_filter(section)
+    if only:
+        j['filterConfig'] = detail_filter(*only)
     dump(j, d / 'visual.json')
 
 
@@ -122,22 +124,21 @@ def grouped_bars(measure_names, item_field, fmt, items_sort=None, who=WHO):
     keys = [m for m in measure_names]
     spec = copy.deepcopy(BASE)
     spec['transform'] = [
-        {'calculate': "datum['" + item_field + "'] ? datum['" + item_field + "'] : '(Blank)'", 'as': 'Item'},
+        {'calculate': "datum['" + item_field + "'] === 'Curriculum points' ? 'VDOE-approved curriculum' : datum['" + item_field + "'] ? datum['" + item_field + "'] : '(Blank)'", 'as': 'Item'},
         {'fold': keys, 'as': ['key', 'value']},
         {'filter': 'isValid(datum.value)'},
         {'calculate': json.dumps(who) + '[indexof(' + json.dumps(keys) + ', datum.key)]', 'as': 'Who'}]
-    y = {'field': 'Item', 'type': 'nominal', 'axis': {'title': None, 'ticks': False, 'domain': False, 'labelFontSize': 13, 'labelLimit': 140}}
+    y = {'field': 'Item', 'type': 'nominal', 'axis': {'title': None, 'ticks': False, 'domain': False, 'labelFontSize': 13, 'labelLimit': 150}, 'scale': {'paddingInner': 0.3}}
     if items_sort:
         y['sort'] = items_sort
     spec['encoding'] = {'y': y}
     spec['layer'] = [
         {'mark': {'type': 'bar', 'cornerRadiusEnd': 3},
-         'encoding': {'yOffset': {'field': 'Who', 'type': 'nominal', 'sort': who},
-                      'x': {'field': 'value', 'type': 'quantitative', 'axis': None},
-                      'color': {'field': 'Who', 'type': 'nominal', 'sort': who, 'scale': {'domain': who, 'range': [NAVY, GREEN, GREY][:len(who)]},
-                                'legend': {'orient': 'bottom', 'title': None, 'labelFontSize': 12, 'symbolType': 'square'}}}},
+         'encoding': {'yOffset': {'field': 'Who', 'type': 'nominal', 'sort': who, 'scale': {'paddingInner': 0.08}},
+                      'x': {'field': 'value', 'type': 'quantitative', 'axis': None, 'scale': {'zero': True, 'nice': False}},
+                      'color': {'field': 'Who', 'type': 'nominal', 'sort': who, 'scale': {'domain': who, 'range': [NAVY, GREEN, GREY][:len(who)]}, 'legend': None}}},
         {'mark': {'type': 'text', 'align': 'left', 'dx': 4, 'fontSize': 12, 'color': '#23323F'},
-         'encoding': {'yOffset': {'field': 'Who', 'type': 'nominal', 'sort': who},
+         'encoding': {'yOffset': {'field': 'Who', 'type': 'nominal', 'sort': who, 'scale': {'paddingInner': 0.08}},
                       'x': {'field': 'value', 'type': 'quantitative'},
                       'text': {'field': 'value', 'type': 'quantitative', 'format': fmt}}}]
     return spec
@@ -165,12 +166,12 @@ RATINGS_SPEC.update({
 
 # ---- layout: Letter portrait, 816 x 1056
 j, d = add(title_card, 0, 0, 816, 64); dump(j, d / 'visual.json')
-j, d = add(asof_box, 20, 70, 776, 34); dump(j, d / 'visual.json')
+j, d = add(asof_box, 20, 70, 776, 46); dump(j, d / 'visual.json')
 for n, k in enumerate(kpis):
-    j, d = add(k, 20 + n * 196, 110, 184, 78); dump(j, d / 'visual.json')
+    j, d = add(k, 20 + n * 196, 122, 184, 78); dump(j, d / 'visual.json')
 
 W, X = 384, [20, 412]
-YS, H = [198, 454, 710], 246
+YS, H = [210, 464, 718], 244
 j, d = add(chart, X[0], YS[0], W, H)
 j['visual']['visualContainerObjects']['subTitle'] = [{'properties': {'show': L('false')}}]
 dump(j, d / 'visual.json')
@@ -180,17 +181,17 @@ deneb(X[1], YS[0], W, H, 'Quality ratings: share of sites', col('Rating Levels',
 deneb(X[0], YS[1], W, H, 'Average points by program type', col('Sites-Orgs', 'cr720_providertypename'),
       [mea('Average points'), mea('RRNC average points'), mea('Virginia average points')],
       grouped_bars(['Average points', 'RRNC average points', 'Virginia average points'], 'cr720_providertypename', 'd'))
-deneb(X[1], YS[1], W, H, 'Average points by component', col('Detail', 'Item'),
+deneb(X[1], YS[1], W, H, 'Average points: interaction and total', col('Detail', 'Item'),
       [mea('Group detail points'), mea('RRNC detail points'), mea('Virginia detail points')],
-      grouped_bars(['Group detail points', 'RRNC detail points', 'Virginia detail points'], 'Item', 'd', ['Interaction points', 'Curriculum points', 'Total points']), 'Points')
-deneb(X[0], YS[2], W, H, 'Honor Roll: share of sites', col('Detail', 'Item'),
+      grouped_bars(['Group detail points', 'RRNC detail points', 'Virginia detail points'], 'Item', 'd', ['Interaction points', 'Total points']), ('Item', ['Interaction points', 'Total points']))
+deneb(X[0], YS[2], W, H, 'Honor Roll and approved curriculum: share of sites', col('Detail', 'Item'),
       [mea('Group detail share'), mea('RRNC detail share'), mea('Virginia detail share')],
-      grouped_bars(['Group detail share', 'RRNC detail share', 'Virginia detail share'], 'Item', '.0%', ['Excellence', 'Improvement', 'Infant/Toddler']), 'Honor Roll')
+      grouped_bars(['Group detail share', 'RRNC detail share', 'Virginia detail share'], 'Item', '.0%', ['Excellence', 'Improvement', 'Infant/Toddler', 'VDOE-approved curriculum']), ('Item', ['Excellence', 'Improvement', 'Infant/Toddler', 'Curriculum points']))
 deneb(X[1], YS[2], W, H, 'Years in VQB5: share of sites', col('Detail', 'Item'),
       [mea('Group detail share'), mea('RRNC detail share')],
-      grouped_bars(['Group detail share', 'RRNC detail share'], 'Item', '.0%', ['First year', 'Second year', 'Third year or more'], WHO[:2]), 'Years in VQB5')
+      grouped_bars(['Group detail share', 'RRNC detail share'], 'Item', '.0%', ['First year', 'Second year', 'Third year or more'], WHO[:2]), ('Section', ['Years in VQB5']))
 
-j, d = add(footer, 20, 966, 776, 60)
+j, d = add(footer, 20, 972, 776, 56)
 j['visual']['objects']['general'][0]['properties']['paragraphs'] = [{'textRuns': [{'value': 'Internal use. Approval is needed before sharing outside Foundation First / RRNC. Source: VDOE VQB5 Quality Rating Data (public); Virginia figures from VDOE statewide files. Scores run from 100 to 800. No Provider 360 or other internal data is included.', 'textStyle': {'fontSize': '10pt', 'color': '#4f5f6b'}}]}]
 dump(j, d / 'visual.json')
 print('Dashboard built:', P3.name, '-', len(list((P3 / 'visuals').glob('*'))), 'visuals')

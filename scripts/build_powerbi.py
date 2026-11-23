@@ -77,7 +77,7 @@ TAIL = {'text': """SWITCH(sec,
     "Years in VQB5", COALESCE(tn, 0) & IF(COALESCE(tn, 0) = 1, " site", " sites") & IF(COALESCE(tn, 0) > 0, ", average " & FORMAT(tavg, "0"), ""),
     BLANK())""",
         'points': 'IF(sec = "Points", pv, BLANK())',
-        'share': 'SWITCH(sec, "Honor Roll", DIVIDE(hn, tot, 0), "Years in VQB5", DIVIDE(COALESCE(tn, 0), tot, 0), BLANK())'}
+        'share': 'SWITCH(sec, "Honor Roll", DIVIDE(hn, tot, 0), "Years in VQB5", DIVIDE(COALESCE(tn, 0), tot, 0), "Points", IF(it = "Curriculum points", DIVIDE(pv, 100)), BLANK())'}
 
 
 def detail_measure(rrnc, mode='text'):
@@ -169,7 +169,7 @@ VAR vt = [Virginia type]
 VAR yr = MAX(Virginia[StartYear])
 VAR vs = CALCULATE(MAX(Virginia[Sites]), Virginia[StartYear] = yr, Virginia[Type] = vt)
 VAR v = SWITCH(vt, "Center", MAX(Detail[VA_Center]), "Public School", MAX(Detail[VA_PublicSchool]), "Family Day Home", MAX(Detail[VA_FamilyDayHome]), MAX(Detail[VA_All]))
-RETURN IF(sec = "Honor Roll", DIVIDE(v, vs, 0))"""),
+RETURN IF(sec = "Honor Roll", DIVIDE(v, vs, 0), IF(sec = "Points" && SELECTEDVALUE(Detail[Item]) = "Curriculum points", DIVIDE(v, 100)))"""),
  ('Group level share', '0%', f"""VAR lvl = SELECTEDVALUE('Rating Levels'[Level])
 VAR ly = [Latest Year]
 RETURN DIVIDE(COALESCE(CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), {PY}[cr720_name] = ly, {PS}[cr720_qualityrating] = lvl), 0), [Sites rated], 0)"""),
