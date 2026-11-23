@@ -125,7 +125,7 @@ for name, fmt, dax in MEAS:
     blk += [f"{T*2}lineageTag: {guid('m.' + name)}", '']
 pp = SM / 'tables' / 'Published Scores.tmdl'
 t = pp.read_text(encoding='utf-8')
-t = re.sub(r"(?m)^\tmeasure '(?:" + '|'.join(re.escape(n) for n, _, _ in MEAS) + r")' =\n(?:(?:\t\t.*)?\n)*", '', t)   # remove only our own measure blocks
+t = re.sub(r"(?m)^\tmeasure '(?:" + '|'.join(re.escape(n) for n in [m[0] for m in MEAS] + ['Latest Start']) + r")' =.*\n(?:(?:\t\t.*)?\n)*", '', t)   # remove only our own measure blocks
 i = t.index("\n\tpartition 'Published Scores'")
 t = t[:i].rstrip('\n') + '\n\n' + ('\n'.join(blk) if STAGE >= 2 else '') + t[i:]
 pp.write_text(t, encoding='utf-8')
