@@ -10,13 +10,14 @@ Writes, idempotently:
 Run it with Power BI Desktop closed, then open "Quality Ratings.pbip".
 Re-run after build_data.py when new years are published, to refresh the Virginia numbers.
 """
-import json, re, uuid
+import json, re, sys, uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PBI = ROOT / 'internal' / 'powerbi'
-SM = PBI / 'Quality Ratings.SemanticModel' / 'definition'
-RP = PBI / 'Quality Ratings.Report' / 'definition'
+STAGE = int(next((a.split('=')[1] for a in sys.argv if a.startswith('--stage=')), 3))   # 0 = remove everything added; 1 = + tables; 2 = + measures; 3 = + report page (default canvas size); 4 = + Letter-size page
+PBI = Path(next((a.split('=',1)[1] for a in sys.argv if a.startswith('--project=')), ROOT / 'internal' / 'powerbi'))   # folder that holds the .pbip
+SM = next(PBI.glob('*.SemanticModel')) / 'definition'
+RP = next(PBI.glob('*.Report')) / 'definition'
 T = '\t'
 guid = lambda s: str(uuid.uuid5(uuid.NAMESPACE_URL, 'ff-vqb5/' + s))
 
@@ -41,6 +42,8 @@ out += [T + 'partition Virginia = m', T * 2 + 'mode: import', T * 2 + 'source ='
         T * 4 + '  Source = #table(type table [StartYear = Int64.Type, Type = text, Sites = Int64.Type, AvgPoints = number, Needs = Int64.Type, Meets = Int64.Type, Exceeds = Int64.Type], {' + ('{' + data + '}' if False else data) + '})',
         T * 4 + 'in', T * 4 + '  Source', '']
 (SM / 'tables' / 'Virginia.tmdl').write_text('\n'.join(out), encoding='utf-8')
+if STAGE < 1:
+    (SM / 'tables' / 'Virginia.tmdl').unlink()
 
 # ---------------------------------------------------------------- rating levels
 lv = ['table \'Rating Levels\'', T + 'lineageTag: ' + guid('Levels'), '',
@@ -49,13 +52,16 @@ lv = ['table \'Rating Levels\'', T + 'lineageTag: ' + guid('Levels'), '',
       T + "partition 'Rating Levels' = calculated", T * 2 + 'mode: import',
       T * 2 + 'source = DATATABLE("Level", STRING, "Order", INTEGER, {{"Exceeds Expectations", 1}, {"Meets Expectations", 2}, {"Needs Support", 3}})', '']
 (SM / 'tables' / 'Rating Levels.tmdl').write_text('\n'.join(lv), encoding='utf-8')
+if STAGE < 1:
+    (SM / 'tables' / 'Rating Levels.tmdl').unlink()
 
 # ---------------------------------------------------------------- model refs
 mp = SM / 'model.tmdl'
 m = mp.read_text(encoding='utf-8')
 for t in ('Virginia', "'Rating Levels'"):
-    if 'ref table ' + t not in m:
-        m = m.rstrip('\n') + '\nref table ' + t + '\n'
+    m = m.replace('ref table ' + t + '\n', '').rstrip('\n') + '\n'
+    if STAGE >= 1:
+        m += 'ref table ' + t + '\n'
 mp.write_text(m, encoding='utf-8')
 
 # ---------------------------------------------------------------- measures
@@ -113,12 +119,13 @@ pp = SM / 'tables' / 'Published Scores.tmdl'
 t = pp.read_text(encoding='utf-8')
 t = re.sub(r"\n\tmeasure 'Latest Start' =.*?(?=\n\tpartition )", '\n', t, flags=re.S)
 i = t.index("\n\tpartition 'Published Scores'")
-t = t[:i].rstrip('\n') + '\n\n' + '\n'.join(blk) + t[i:]
+t = t[:i].rstrip('\n') + '\n\n' + ('\n'.join(blk) if STAGE >= 2 else '') + t[i:]
 pp.write_text(t, encoding='utf-8')
 
 # ---------------------------------------------------------------- report page
 NAVY, GREEN, INK = '#0E3F66', '#6FA82B', '#23323f'
-PAGE = '1d7348c08ba12e3e0f25'
+PLAIN = '--plain' in sys.argv     # python scripts/build_powerbi.py --plain  (data bindings only; use to isolate a load error)
+PAGE = json.load(open(RP / 'pages' / 'pages.json', encoding='utf-8-sig'))['pageOrder'][0]   # the report's first page
 SCHEMA = 'https://developer.microsoft.com/json-schema/fabric/item/report/definition/'
 L = lambda v: {'expr': {'Literal': {'Value': v}}}
 Q = lambda s: L("'" + s + "'")
@@ -135,7 +142,11 @@ def container(name, x, y, w, h, visual, container_objects=None):
     v = {'$schema': SCHEMA + 'visualContainer/2.0.0/schema.json', 'name': name,
          'position': {'x': x, 'y': y, 'z': 0, 'height': h, 'width': w, 'tabOrder': len(list(vis_dir.glob('*')))},
          'visual': visual}
+    if PLAIN and visual['visualType'] != 'textbox':      # --plain: no formatting at all, only data bindings
+        visual.pop('objects', None)
+        container_objects = None
     if container_objects: v['visual']['visualContainerObjects'] = container_objects
+    if PLAIN and visual['visualType'] == 'slicer': visual['objects'] = {'data': [{'properties': {'mode': Q('Dropdown')}}]}
     d = vis_dir / name
     d.mkdir(parents=True, exist_ok=True)
     (d / 'visual.json').write_text(json.dumps(v, indent=2), encoding='utf-8')
@@ -154,9 +165,16 @@ if vis_dir.exists():
     shutil.rmtree(vis_dir)
 vis_dir.mkdir(parents=True)
 
-(RP / 'pages' / PAGE / 'page.json').write_text(json.dumps({
-    '$schema': SCHEMA + 'page/2.1.0/schema.json', 'name': PAGE, 'displayName': 'One-pager', 'displayOption': 'FitToPage', 'height': 1056, 'width': 816}, indent=2), encoding='utf-8')
+if STAGE >= 4:     # Letter-size page; earlier stages leave the page exactly as Desktop saved it
+    pj = RP / 'pages' / PAGE / 'page.json'
+    pg = json.load(open(pj, encoding='utf-8-sig'))
+    pg.update(displayName='One-pager', displayOption='FitToPage', height=1056, width=816)
+    pj.write_text(json.dumps(pg, indent=2), encoding='utf-8')
 
+if STAGE < 3:
+    shutil.rmtree(vis_dir)
+    print('Stage', STAGE, 'built; report page left blank.')
+    raise SystemExit
 # title band
 container('title', 0, 0, 816, 70, {'visualType': 'card', 'query': {'queryState': {'Values': {'projections': [M('Report title')]}}},
     'objects': {'labels': [{'properties': {'fontSize': L('26D'), 'bold': L('true'), 'color': solid('#FFFFFF')}}], 'categoryLabels': [{'properties': {'show': L('false')}}]},
@@ -179,7 +197,7 @@ container('levels', 20, 284, 776, 136, {'visualType': 'tableEx', 'query': {'quer
     'drillFilterOtherVisuals': True}, title('Ratings in the latest program year: sites (share)'))
 # over time
 container('trend', 20, 432, 776, 270, {'visualType': 'lineChart', 'query': {'queryState': {'Category': {'projections': [C(PY.strip("'"), 'cr720_name')]}, 'Y': {'projections': [M('Group average by year'), M('RRNC average by year'), M('Virginia average by year')]}}},
-    'objects': {'legend': [{'properties': {'show': L('true'), 'position': Q('Bottom'), 'fontSize': L('12D')}}], 'dataPoint': [], 'labels': [{'properties': {'show': L('true'), 'fontSize': L('12D')}}],
+    'objects': {'legend': [{'properties': {'show': L('true'), 'position': Q('Bottom'), 'fontSize': L('12D')}}], 'labels': [{'properties': {'show': L('true'), 'fontSize': L('12D')}}],
                 'valueAxis': [{'properties': {'showAxisTitle': L('false'), 'fontSize': L('12D')}}], 'categoryAxis': [{'properties': {'fontSize': L('12D')}}]},
     'drillFilterOtherVisuals': True}, title('Average total points by program year'))
 # site detail: sites by year
