@@ -101,11 +101,8 @@ def detail_filter(prop, values):
 
 
 # ---- Deneb charts
-NAVY, GREEN, GREY = '#0E3F66', '#6FA82B', '#85888B'
-WHO = ['This group', 'RRNC', 'Virginia']
-BASE = {'$schema': 'https://vega.github.io/schema/vega-lite/v5.json', 'data': {'name': 'dataset'},
-        'autosize': {'type': 'fit', 'contains': 'padding'},
-        'config': {'view': {'stroke': None}, 'font': 'Segoe UI', 'axis': {'labelColor': '#23323F', 'labelFontSize': 12}}}
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import pbi_specs as S
 
 
 def deneb(x, y, w, h, title, category, series, spec, only=None):
@@ -119,87 +116,6 @@ def deneb(x, y, w, h, title, category, series, spec, only=None):
     dump(j, d / 'visual.json')
 
 
-def grouped_bars(measure_names, item_field, fmt, items_sort=None, who=WHO):
-    """Horizontal grouped bars: one row per item, one bar per group (This group / RRNC / Virginia)."""
-    keys = [m for m in measure_names]
-    spec = copy.deepcopy(BASE)
-    spec['transform'] = [
-        {'calculate': "datum['" + item_field + "'] === 'Curriculum points' ? 'VDOE-approved curriculum' : datum['" + item_field + "'] ? datum['" + item_field + "'] : '(Blank)'", 'as': 'Item'},
-        {'fold': keys, 'as': ['key', 'value']},
-        {'filter': 'isValid(datum.value)'},
-        {'calculate': json.dumps(who) + '[indexof(' + json.dumps(keys) + ', datum.key)]', 'as': 'Who'}]
-    y = {'field': 'Item', 'type': 'nominal', 'axis': {'title': None, 'ticks': False, 'domain': False, 'labelFontSize': 13, 'labelLimit': 150}, 'scale': {'paddingInner': 0.3}}
-    if items_sort:
-        y['sort'] = items_sort
-    spec['encoding'] = {'y': y}
-    spec['layer'] = [
-        {'mark': {'type': 'bar', 'cornerRadiusEnd': 3},
-         'encoding': {'yOffset': {'field': 'Who', 'type': 'nominal', 'sort': who, 'scale': {'paddingInner': 0.08}},
-                      'x': {'field': 'value', 'type': 'quantitative', 'axis': None, 'scale': {'zero': True, 'nice': False}},
-                      'color': {'field': 'Who', 'type': 'nominal', 'sort': who, 'scale': {'domain': who, 'range': [NAVY, GREEN, GREY][:len(who)]}, 'legend': None}}},
-        {'mark': {'type': 'text', 'align': 'left', 'dx': 4, 'fontSize': 12, 'color': '#23323F'},
-         'encoding': {'yOffset': {'field': 'Who', 'type': 'nominal', 'sort': who, 'scale': {'paddingInner': 0.08}},
-                      'x': {'field': 'value', 'type': 'quantitative'},
-                      'text': {'field': 'value', 'type': 'quantitative', 'format': fmt}}}]
-    return spec
-
-
-def dot_plot(measure_names, item_field, fmt, who=WHO):
-    """One row per item, one dot per group on a shared score axis (like the site's program-type chart)."""
-    keys = list(measure_names)
-    spec = copy.deepcopy(BASE)
-    spec['transform'] = [
-        {'calculate': "datum['" + item_field + "'] ? datum['" + item_field + "'] : '(Blank)'", 'as': 'Item'},
-        {'fold': keys, 'as': ['key', 'value']},
-        {'filter': 'isValid(datum.value)'},
-        {'calculate': json.dumps(who) + '[indexof(' + json.dumps(keys) + ', datum.key)]', 'as': 'Who'},
-        {'calculate': "datum.Who === 'This group' ? datum.value : null", 'as': 'gv'},
-        {'joinaggregate': [{'op': 'max', 'field': 'gv', 'as': 'groupVal'}], 'groupby': ['Item']}]
-    color = {'field': 'Who', 'type': 'nominal', 'sort': who, 'scale': {'domain': who, 'range': [NAVY, GREEN, GREY][:len(who)]},
-             'legend': {'orient': 'top', 'title': None, 'labelFontSize': 12, 'symbolType': 'circle'}}
-    x = {'field': 'value', 'type': 'quantitative', 'scale': {'zero': False, 'nice': True}, 'axis': {'title': None, 'grid': False, 'labelFontSize': 12}}
-    y = {'field': 'Item', 'type': 'nominal', 'axis': {'title': None, 'ticks': False, 'domain': False, 'labelFontSize': 13, 'labelLimit': 150}, 'scale': {'paddingInner': 0.4}}
-    spec['encoding'] = {'y': y}
-    spec['layer'] = [
-        {'transform': [{'aggregate': [{'op': 'min', 'field': 'value', 'as': 'lo'}, {'op': 'max', 'field': 'value', 'as': 'hi'}], 'groupby': ['Item']}],
-         'mark': {'type': 'rule', 'color': '#D5DDE3', 'strokeWidth': 2},
-         'encoding': {'x': {'field': 'lo', 'type': 'quantitative'}, 'x2': {'field': 'hi'}}},
-        {'transform': [{'calculate': "datum.Who === 'Virginia' ? 0 : datum.Who === 'RRNC' ? 1 : 2", 'as': 'z'}],
-         'mark': {'type': 'circle', 'size': 170, 'opacity': 1},
-         'encoding': {'x': x, 'color': color, 'order': {'field': 'z', 'type': 'quantitative'}}},
-        {'transform': [{'filter': "datum.Who === 'This group'"}],
-         'mark': {'type': 'text', 'dy': -14, 'fontSize': 12, 'fontWeight': 'bold', 'color': NAVY},
-         'encoding': {'x': {'field': 'value', 'type': 'quantitative'}, 'text': {'field': 'value', 'type': 'quantitative', 'format': fmt}}},
-        {'transform': [{'filter': "datum.Who === 'RRNC' && datum.value !== datum.groupVal"}],
-         'mark': {'type': 'text', 'dy': -28, 'fontSize': 12, 'fontWeight': 'bold', 'color': '#4C7A12'},
-         'encoding': {'x': {'field': 'value', 'type': 'quantitative'}, 'text': {'field': 'value', 'type': 'quantitative', 'format': fmt}}},
-        {'transform': [{'filter': "datum.Who === 'Virginia'"}],
-         'mark': {'type': 'text', 'dy': 16, 'fontSize': 12, 'fontWeight': 'bold', 'color': '#5F6368'},
-         'encoding': {'x': {'field': 'value', 'type': 'quantitative'}, 'text': {'field': 'value', 'type': 'quantitative', 'format': fmt}}}]
-    return spec
-
-
-LEVELS = ['Exceeds Expectations', 'Meets Expectations', 'Needs Support']
-RATINGS_SPEC = copy.deepcopy(BASE)
-RATINGS_SPEC.update({
-    'transform': [
-        {'fold': ['Group level share', 'RRNC level share', 'Virginia level share'], 'as': ['key', 'share']},
-        {'calculate': "datum.key === 'Group level share' ? 'This group' : datum.key === 'RRNC level share' ? 'RRNC' : 'Virginia'", 'as': 'Who'},
-        {'calculate': 'indexof(' + json.dumps(LEVELS) + ', datum.Level)', 'as': 'ord'},
-        {'window': [{'op': 'sum', 'field': 'share', 'as': 'cum'}], 'groupby': ['Who'], 'sort': [{'field': 'ord'}], 'frame': [None, 0]},
-        {'calculate': 'datum.cum - datum.share', 'as': 'start'},
-        {'calculate': 'datum.cum - datum.share / 2', 'as': 'mid'}],
-    'encoding': {'y': {'field': 'Who', 'type': 'nominal', 'sort': WHO, 'axis': {'title': None, 'labelFontSize': 13, 'ticks': False, 'domain': False}}},
-    'layer': [
-        {'mark': {'type': 'bar', 'height': 34, 'cornerRadius': 3},
-         'encoding': {'x': {'field': 'start', 'type': 'quantitative', 'scale': {'domain': [0, 1]}, 'axis': None}, 'x2': {'field': 'cum'},
-                      'color': {'field': 'Level', 'type': 'nominal', 'sort': LEVELS, 'scale': {'domain': LEVELS, 'range': ['#11689B', '#9CC3DB', '#F7941D']},
-                                'legend': {'orient': 'bottom', 'direction': 'vertical', 'title': None, 'labelFontSize': 12, 'symbolType': 'square'}}}},
-        {'transform': [{'filter': 'datum.share >= 0.05'}],
-         'mark': {'type': 'text', 'fontSize': 13, 'fontWeight': 'bold'},
-         'encoding': {'x': {'field': 'mid', 'type': 'quantitative', 'scale': {'domain': [0, 1]}}, 'text': {'field': 'share', 'type': 'quantitative', 'format': '.0%'},
-                      'color': {'condition': {'test': "datum.Level === 'Meets Expectations'", 'value': '#23323F'}, 'value': 'white'}}}]})
-
 # ---- layout: Letter portrait, 816 x 1056
 j, d = add(title_card, 0, 0, 816, 64); dump(j, d / 'visual.json')
 j, d = add(asof_box, 20, 70, 776, 46); dump(j, d / 'visual.json')
@@ -207,30 +123,32 @@ for n, k in enumerate(kpis):
     j, d = add(k, 20 + n * 196, 122, 184, 78); dump(j, d / 'visual.json')
 
 W, X = 384, [20, 412]
-YS, H = [210, 444, 678], 226
-j, d = add(chart, X[0], YS[0], W, H)
+S_ = lambda *names: [mea(n) for n in names]
+SH = ('Group detail share', 'RRNC detail share', 'Virginia detail share')
+
+# row 1: ratings as tiles
+deneb(20, 210, 776, 165, 'Quality ratings, latest program year', col('Rating Levels', 'Level'),
+      S_('Group level share', 'RRNC level share', 'Virginia level share', 'Sites rated'), S.rating_tiles())
+# row 2: trend (native line chart from page 1) and program type dots
+j, d = add(chart, X[0], 383, W, 230)
 j['visual']['visualContainerObjects']['subTitle'] = [{'properties': {'show': L('false')}}]
 dump(j, d / 'visual.json')
+deneb(X[1], 383, W, 230, 'Average score by program type', col('Sites-Orgs', 'cr720_providertypename'),
+      S_('Average points', 'RRNC average points', 'Virginia average points'),
+      S.dot_plot(['Average points', 'RRNC average points', 'Virginia average points'], 'cr720_providertypename', 'd'))
+# row 3: points against the maximum, and years in VQB5
+deneb(X[0], 621, W, 175, 'Points against the maximum possible', col('Detail', 'Item'),
+      S_('Group detail points', 'RRNC detail points', 'Virginia detail points'),
+      S.bullet({'Interaction points': 700, 'Total points': 800}, ['Interaction points', 'Total points']), ('Item', ['Interaction points', 'Total points']))
+deneb(X[1], 621, W, 175, 'Years in VQB5', col('Detail', 'Item'), S_(*SH, 'Sites rated'),
+      S.detail_tiles(['First year', 'Second year', 'Third year or more'], ['#C9DCEA', '#7FA9C9', '#0E3F66']), ('Section', ['Years in VQB5']))
+# row 4: Honor Roll tiles and curriculum rings
+deneb(X[0], 804, W, 175, 'Honor Roll', col('Detail', 'Item'), S_(*SH, 'Sites rated'),
+      S.detail_tiles(['Excellence', 'Improvement', 'Infant/Toddler'], ['#BFDC8C', '#8DBF4A', '#4C7A12']), ('Section', ['Honor Roll']))
+deneb(X[1], 804, W, 175, 'Sites using a VDOE-approved curriculum', col('Detail', 'Item'), S_(*SH),
+      S.rings(SH), ('Item', ['Curriculum points']))
 
-deneb(X[1], YS[0], W, H, 'Quality ratings: share of sites', col('Rating Levels', 'Level'),
-      [mea('Group level share'), mea('RRNC level share'), mea('Virginia level share')], RATINGS_SPEC)
-deneb(X[0], YS[1], W, H, 'Average score by program type', col('Sites-Orgs', 'cr720_providertypename'),
-      [mea('Average points'), mea('RRNC average points'), mea('Virginia average points')],
-      dot_plot(['Average points', 'RRNC average points', 'Virginia average points'], 'cr720_providertypename', 'd'))
-deneb(X[1], YS[1], W, H, 'Honor Roll: share of sites', col('Detail', 'Item'),
-      [mea('Group detail share'), mea('RRNC detail share'), mea('Virginia detail share')],
-      grouped_bars(['Group detail share', 'RRNC detail share', 'Virginia detail share'], 'Item', '.0%', ['Excellence', 'Improvement', 'Infant/Toddler']), ('Section', ['Honor Roll']))
-deneb(X[0], YS[2], W, H, 'Average points: interaction and total', col('Detail', 'Item'),
-      [mea('Group detail points'), mea('RRNC detail points'), mea('Virginia detail points')],
-      grouped_bars(['Group detail points', 'RRNC detail points', 'Virginia detail points'], 'Item', 'd', ['Interaction points', 'Total points']), ('Item', ['Interaction points', 'Total points']))
-deneb(X[1], YS[2], W, H, 'Years in VQB5: share of sites', col('Detail', 'Item'),
-      [mea('Group detail share'), mea('RRNC detail share')],
-      grouped_bars(['Group detail share', 'RRNC detail share'], 'Item', '.0%', ['First year', 'Second year', 'Third year or more'], WHO[:2]), ('Section', ['Years in VQB5']))
-deneb(20, 912, 776, 100, 'Sites using a VDOE-approved curriculum', col('Detail', 'Item'),
-      [mea('Group detail share'), mea('RRNC detail share'), mea('Virginia detail share')],
-      grouped_bars(['Group detail share', 'RRNC detail share', 'Virginia detail share'], 'Item', '.0%'), ('Item', ['Curriculum points']))
-
-j, d = add(footer, 20, 1016, 776, 36)
+j, d = add(footer, 20, 988, 776, 44)
 j['visual']['objects']['general'][0]['properties']['paragraphs'] = [{'textRuns': [{'value': 'Internal use. Approval is needed before sharing outside Foundation First / RRNC. Source: VDOE VQB5 Quality Rating Data (public); Virginia figures from VDOE statewide files. Scores run from 100 to 800. No Provider 360 or other internal data is included.', 'textStyle': {'fontSize': '10pt', 'color': '#4f5f6b'}}]}]
 dump(j, d / 'visual.json')
 print('Dashboard built:', P3.name, '-', len(list((P3 / 'visuals').glob('*'))), 'visuals')
