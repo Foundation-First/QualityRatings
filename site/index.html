@@ -3,40 +3,54 @@
 <title>Home · RRNC Quality Ratings Dashboard</title><link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="hero" id="hero"><div class="wrap"></div></div>
+<div class="hero"><div class="wrap">
+ <h2>VQB5 Quality Ratings, 2025-2026</h2>
+ <div class="callout" id="callout"></div>
+ <div id="stats"></div>
+</div></div>
 <main class="wrap">
-<div class="kpis" id="kpis"></div>
+<section><h2>The short version</h2>
+<ul class="tldr" id="tldr"></ul></section>
 
 <section><h2>What would you like to know?</h2>
 <div class="qgrid">
- <a class="qcard" href="locality.html"><b>How is my locality or school district doing?</b></a>
- <a class="qcard" href="over-time.html"><b>Is quality improving?</b></a>
- <a class="qcard" href="types.html"><b>How do centers, schools and home-based programs compare?</b></a>
- <a class="qcard" href="class.html"><b>What does classroom quality look like?</b></a>
- <a class="qcard" href="types.html#honor"><b>Who is on the Honor Roll?</b></a>
+ <a class="qcard" href="locality.html">How is my locality or school district doing?</a>
+ <a class="qcard" href="over-time.html">Is quality improving?</a>
+ <a class="qcard" href="types.html">How do centers, schools and home-based programs compare?</a>
+ <a class="qcard" href="class.html">What does classroom quality look like?</a>
+ <a class="qcard" href="types.html#honor">Who is on the Honor Roll?</a>
+ <a class="qcard" href="five-level.html">What is changing with the five-level ratings?</a>
 </div>
 </section>
 </main>
 <script src="common.js"></script>
 <script>
+const YRS = ['2023-24', '2024-25', '2025-26'];
 function draw() {
   const S = SUMMARY, cur = S.years['2025-26'], st = S.statewide['2025-26'], n = cur.n, curL = levelsFromBins(cur.bins), last = LEVELS.length - 1;
-  const diff = Math.round(cur.avg - st.avg), honorTotal = S.honor['2025-26']._unique;
+  const diff = Math.round(cur.avg - st.avg), honorTotal = S.honor['2025-26']._unique, r = Math.round;
   if (scaleKey === 'three') {
     const meets = curL[1] + curL[2];
-    $('#hero .wrap').innerHTML = `<h2>${meets} of ${n} sites (${(100 * meets / n).toFixed(1)}%) in Ready Region North Central met or exceeded expectations in the 2025-26 program year.</h2>
-      <p>The Ready Region North Central (RRNC) average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st.avg)}.</p>`;
+    $('#callout').innerHTML = `${meets} of ${n} sites (${(100 * meets / n).toFixed(1)}%) in Ready Region North Central met or exceeded expectations in the 2025-26 program year. The Ready Region North Central (RRNC) average was <b>${r(cur.avg)} points</b>, ${diff} above the statewide average of ${r(st.avg)}.`;
   } else {
     const top2 = curL[last] + curL[last - 1], big = curL.indexOf(Math.max(...curL));
-    $('#hero .wrap').innerHTML = `<h2>${pc(top2, n)} of RRNC sites score 600 or higher</h2>
-      <p>The Ready Region North Central (RRNC) average was <b>${Math.round(cur.avg)} points</b>, ${diff} above the statewide average of ${Math.round(st.avg)}. The largest group (${curL[big]} sites) is at the ${LEVELS[big].name} level.</p>`;
+    $('#callout').innerHTML = `${pc(top2, n)} of RRNC sites scored 600 or higher in the 2025-26 program year. The Ready Region North Central (RRNC) average was <b>${r(cur.avg)} points</b>, ${diff} above the statewide average of ${r(st.avg)}. The largest group (${curL[big]} sites) is at the ${LEVELS[big].name} level.`;
   }
-  $('#kpis').innerHTML = kpis([
-    [fmt(n), 'sites rated in 2025-26'],
-    [`${Math.round(cur.avg)}`, `average total points (state ${Math.round(st.avg)})`],
-    ...DESC.map(i => [fmt(curL[i]), `${LEVELS[i].name} (${pc(curL[i], n)})`, LEVELS[i].color]),
-    [fmt(honorTotal), `sites on an Honor Roll (${pc(honorTotal, n)})`],
+  $('#stats').innerHTML = kpis([
+    [fmt(n), 'Sites rated in 2025-26'],
+    [r(cur.avg), `Average total points (state ${r(st.avg)})`],
+    ...DESC.map(i => [fmt(curL[i]), LEVELS[i].name, LEVELS[i].color]),
+    [fmt(honorTotal), 'Sites on an Honor Roll'],
   ]);
+
+  // the short version: only statements the numbers support, each stated as a plain fact
+  const rr = YRS.map(y => S.years[y].avg), va = YRS.map(y => S.statewide[y].avg), T = S.tenure.all, nl = levelsFromBins(S.newSites.newBins);
+  const items = [];
+  if (rr.every((v, i) => v > va[i])) items.push(`RRNC sites averaged above Virginia in each of the last three years: ${r(rr[0])} vs. ${r(va[0])}, ${r(rr[1])} vs. ${r(va[1])} and ${r(rr[2])} vs. ${r(va[2])}.`);
+  items.push(`Participation grew from ${S.years['2023-24'].n} sites in 2023-24 to ${S.years['2025-26'].n} in 2025-26.`);
+  items.push(`Sites that joined in 2024-25 averaged ${r(T.second.avgFirstYear)} points in their first year and ${r(T.second.avg)} in their second (${T.second.n} sites).`);
+  if (scaleKey === 'three' && nl[0] === 0) items.push(`All ${S.newSites.n} sites that were new in 2025-26 met or exceeded expectations.`);
+  $('#tldr').innerHTML = items.map(t => `<li>${t}</li>`).join('');
 }
 init('summary', draw, {filters: false, summary: true});
 </script></body></html>

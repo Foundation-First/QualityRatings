@@ -34,6 +34,10 @@ tan / slate / brown = site types, dark / light green = emphasis within RRNC data
 ## Refreshing
 `python scripts/build_data.py` rebuilds `site/data/*.json` (including `meta.json`, which drives the "data last refreshed" line in the footer).
 
-## Type and look
-Minimum text size is 16px on the page and 15px inside charts (set in `site/style.css` and the `plot()` helper in `site/common.js`); keep new text at or above that.
-The look is polished but restrained: flat navy banner with a green base edge, white cards with soft shadows and 10px corners, tiles that overlap the banner, shaded table headers, chevrons on the question cards. Avoided on purpose: gradients, colored side-bars on callouts, colored top borders on tiles, arrows used as punctuation, and bold on every number.
+## Look
+The visual system follows VDOE's Fall 2026 Data Deep Dive deck (kept in `raw/inspo/deepdive`, git-ignored): navy title band with a light-weight white title, a bold grey takeaway sentence, one exhibit on white, navy-header tables with an orange RRNC header and a sky-blue Average column, peach stat cells, thick-line charts with bold direct labels, dumbbell charts with round markers, and the dark-blue Foundation First banner with the four-colour top stripe.
+Palette and rating-level colours are defined once in `site/common.js` (`P`, `SCHEMES`): RRNC orange, Virginia navy/dark grey, Needs Support amber, Approaching orange, Meets teal, Exceeds blue, Distinguished navy.
+Text is 16px or larger everywhere (charts included). Calibri is used where installed, with Carlito (metric-compatible) as the web fallback.
+
+## Rating levels
+`?scale=5` on any page shows 2025-26 scores in VDOE's new five levels (official names from the deck); `?scale=3` returns to the three-level view.

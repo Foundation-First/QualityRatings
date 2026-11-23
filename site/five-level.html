@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Five-level ratings · RRNC Quality Ratings Dashboard</title><link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist-min@2.35.2/plotly.min.js"></script></head>
+<body><main class="wrap">
+<section><h2>What is changing with the five-level ratings?</h2></section>
+<div class="answer">Beginning with the 2026-27 program year, VQB5 shifts from three rating levels to five, in 100-point steps. The new ratings will be issued in fall 2027.</div>
+
+<div class="chevrons" id="chevrons"></div>
+<div class="chevtext" id="chevtext"></div>
+<p class="small" style="margin-top:12px">Level descriptions are from VDOE's Fall 2026 Data Deep Dive.</p>
+
+<section style="margin-top:34px"><h2>How sites would be rated</h2>
+<div class="viewseg" id="who" role="group" aria-label="Group" style="margin-bottom:12px"></div>
+<div class="answer" id="modeled" style="font-size:24px"></div>
+<div class="card"><div id="c-sankey" class="chart tall"></div></div>
+<p class="small">Modeled with 2025-26 scores. The current three-level rating is on the left; the same scores placed in the five new levels are on the right.</p></section>
+
+<section style="margin-top:34px"><h2>What else is changing</h2>
+<ul class="tldr">
+ <li>Curriculum points will be awarded only to sites that choose to use an approved curriculum in every classroom, beginning with the 2026-27 program year.</li>
+ <li>Starting in fall 2027, sites rated Needs Support or Approaching Expectations (499 points and lower) will take part in VDOE site improvement planning.</li>
+</ul>
+<div class="card"><h3>Timeline</h3><div class="tbl wrap1" id="t-timeline"></div></div></section>
+</main>
+<script src="common.js"></script>
+<script>
+const L5 = SCHEMES.five.levels, L3 = SCHEMES.three.levels;
+const DESCR = [['rarely/never', ' engaged in learning; limited positive or supportive interactions.'], ['occasionally', ' engaged in learning through positive, supportive interactions.'], ['generally', ' engaged in learning through positive, supportive interactions.'],
+  ['frequently', ' engaged in learning through positive, supportive interactions.'], ['continuously', ' engaged in learning through positive and highly supportive interactions.']];
+let who = 'RRNC';
+$('#chevrons').innerHTML = L5.map(l => `<div class="chev" style="background:${l.color};color:${l.text}">${l.name}<small>${l.pts.replace('-', '–')}</small></div>`).join('');
+$('#chevtext').innerHTML = DESCR.map(([b, t]) => `<div>Children <b>${b}</b>${t}</div>`).join('');
+$('#who').innerHTML = ['RRNC', 'Virginia'].map(w => `<button type="button" data-w="${w}">${w}</button>`).join('');
+$('#who').onclick = e => { if (e.target.dataset.w) { who = e.target.dataset.w; draw(); } };
+$('#t-timeline').innerHTML = table(['When', 'What happens'], [
+  ['Fall 2026', 'Quality Profiles released with three levels; sites notified of the transition. 399 points and lower required improvement planning.'],
+  ['Winter/Spring 2027', 'Data verification under the new five-level system. Continued communication through emails, newsletters and webinars.'],
+  ['Summer 2027', 'New five-level Quality Profiles published.'],
+  ['Fall 2027', '499 points and lower required improvement planning.']], 99);
+
+function draw() {
+  if (!SUMMARY || !BENCH) return;
+  $('#who').querySelectorAll('button').forEach(b => { const on = b.dataset.w === who; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  const bins = who === 'RRNC' ? SUMMARY.years['2025-26'].bins : BENCH.state.all.bins;   // [<=399, 400s, 500s, 600s, 700s]
+  const left = [{name: 'Exceeds Expectations', v: bins[4], c: L3[2].color}, {name: 'Meets Expectations', v: bins[1] + bins[2] + bins[3], c: L3[1].color}, {name: 'Needs Support', v: bins[0], c: L3[0].color}];
+  const right = [4, 3, 2, 1, 0].map(b => ({name: L5[b].name, v: bins[b], c: L5[b].color}));
+  const n = sum(bins);
+  $('#modeled').innerHTML = `${who}, using 2025-26 scores: ` + right.map(x => `${fmt(x.v)} at ${x.name}`).join(', ') + '.';
+  // y positions: stack each column top to bottom, giving thin nodes a little room so their labels stay readable
+  const place = col => { const sh = col.map(x => Math.max(x.v / n, 0.115)), tot = sum(sh); let cum = 0; return col.map((_, i) => { const c = cum + sh[i] / tot / 2; cum += sh[i] / tot; return Math.min(0.96, Math.max(0.04, c)); }); };
+  const yl = place(left), yr = place(right);
+  const label = [...left, ...right].map(x => `${x.name}<br>N=${fmt(x.v)}`);
+  const src = [0, 1, 1, 1, 2], tgt = [3, 4, 5, 6, 7], val = [bins[4], bins[3], bins[2], bins[1], bins[0]];   // left idx 0-2, right idx 3-7
+  const link = {source: src, target: tgt, value: val.map(v => Math.max(v, 0.0001)), color: val.map(() => 'rgba(191,191,191,0.65)'), hovertemplate: '%{value:,.0f} sites<extra></extra>'};
+  Plotly.react('c-sankey', [{type: 'sankey', arrangement: 'fixed', node: {pad: 16, thickness: 22, line: {width: 0}, label, color: [...left, ...right].map(x => x.c), x: [0.2, 0.2, 0.2, 0.78, 0.78, 0.78, 0.78, 0.78], y: [...yl, ...yr], hovertemplate: '%{label}<extra></extra>'}, link,
+      textfont: {size: 17, color: P.grey}}],
+    {margin: {t: 20, r: 10, b: 20, l: 10}, paper_bgcolor: 'rgba(0,0,0,0)', font: {family: 'Calibri, Carlito, system-ui, sans-serif', size: 17, color: P.grey},
+     annotations: [{text: '<b>Current<br>3-level<br>ratings</b>', x: 0.0, y: 0.5, xref: 'paper', yref: 'paper', showarrow: false, bgcolor: P.navy, font: {color: '#fff', size: 17}, borderpad: 8, xanchor: 'left'},
+       {text: '<b>Modeled<br>ratings with<br>5 levels</b>', x: 1.0, y: 0.5, xref: 'paper', yref: 'paper', showarrow: false, bgcolor: P.navy, font: {color: '#fff', size: 17}, borderpad: 8, xanchor: 'right'}]},
+    {displayModeBar: false, responsive: true});
+}
+init('five', draw, {filters: false, summary: true, bench: true});
+</script></body></html>

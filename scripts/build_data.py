@@ -82,6 +82,16 @@ summary['newSites'] = dict(
     newBins=[int(((cut == b) & is_new).sum()) for b in BINS])
 using = ~a.CurriculumUse.fillna('').str.contains('did not report')
 summary['curriculumUse'] = {t: dict(using=int(((a.SiteType == t) & using).sum()), total=int((a.SiteType == t).sum())) for t in TYPES}
+
+# ---- years in VQB5 (as of 2025-26): first year, second year (joined 2024-25), three years (participating since 2023-24)
+def tenure(df):
+    t24, t23 = df['Total Points: 2024-2025'], df['Total Points: 2023-2024']
+    first, second, third = df[t24.isna()], df[t24.notna() & t23.isna()], df[t24.notna() & t23.notna()]
+    r = lambda v: None if pd.isna(v) else round(float(v), 1)
+    return dict(first=dict(n=int(len(first)), avg=r(first.TotalPts.mean())),
+                second=dict(n=int(len(second)), avg=r(second.TotalPts.mean()), avgFirstYear=r(second['Total Points: 2024-2025'].mean())),
+                third=dict(n=int(len(third)), avg=r(third.TotalPts.mean())))
+summary['tenure'] = {k: tenure(a if k == 'all' else a[a.SiteType == k]) for k in ['all'] + TYPES}
 json.dump(summary, open('site/data/summary.json', 'w'), separators=(',', ':'))
 
 # ---- statewide benchmark aggregates for the Compare page (no site identifiers) ----

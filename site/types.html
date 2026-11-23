@@ -9,26 +9,40 @@
  <div class="card"><h3>Average score by program type</h3><div id="c-avg" class="chart short"></div></div>
  <div class="card"><h3>Ratings by program type</h3><div class="tbl" id="t-levels"></div></div>
 </div>
-<section id="honor" style="margin-top:26px"><h2>Who is on the Honor Roll?</h2>
+<section id="honor" style="margin-top:40px"><h2>Who is on the Honor Roll?</h2>
 <div class="answer" id="answer2"></div>
-<div class="card"><div class="tbl" id="t-honor"></div></div></section>
+<div class="card"><div id="c-honor" class="chart"></div></div></section>
 </main>
 <script src="common.js"></script>
 <script>
+const ORDER = ['Center', 'Family Day Home', 'Public School'];   // the deck's order
 function draw() {
-  const S = SUMMARY, cur = S.years['2025-26'], st = S.statewide['2025-26'], n = cur.n;
-  const order = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg), av = t => Math.round(cur.byType[t].avg);
-  $('#answer').innerHTML = `Average score: ` + order.map((t, i) => `${i ? TLABEL[t].toLowerCase() : TLABEL[t]} ${av(t)}`).join(', ') + ` points.`;
-  const rows = [...order].reverse();   // plotly lists bottom-up, so the highest ends on top
-  plot('c-avg', [
-    {name: 'RRNC', type: 'scatter', mode: 'markers+text', x: rows.map(t => cur.byType[t].avg), y: rows.map(t => TLABEL[t]), text: rows.map(t => av(t)), textposition: 'top center', marker: {size: 15, color: P.rrnc, line: {width: 1.5, color: '#fff'}}, hovertemplate: '%{y}: %{x:.0f}<extra>RRNC</extra>'},
-    {name: 'Virginia', type: 'scatter', mode: 'markers', x: rows.map(t => st.byType[t].avg), y: rows.map(t => TLABEL[t]), marker: {symbol: 'diamond', size: 13, color: P.grey, line: {width: 1.5, color: '#fff'}}, hovertemplate: '%{y}: %{x:.0f}<extra>Virginia</extra>'}],
-    {xaxis: {title: 'Average points', range: [540, 660]}, yaxis: {automargin: true, range: [-0.6, rows.length - 0.35]}, legend: {orientation: 'h', y: -0.35}, margin: {t: 20, r: 20, b: 80, l: 170}});
+  const S = SUMMARY, cur = S.years['2025-26'], st = S.statewide['2025-26'], n = cur.n, r = Math.round;
+  const byAvg = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg);
+  $('#answer').innerHTML = `Average score: ` + byAvg.map((t, i) => `${i ? TLABEL[t].toLowerCase() : TLABEL[t]} ${r(cur.byType[t].avg)}`).join(', ') + ` points.`;
+
+  // dumbbell: RRNC (orange) and Virginia (navy) for each type, the number inside each circle, as in the deck's variation chart
+  const rows = [...byAvg].reverse();
+  const conn = rows.map(t => ({type: 'scatter', mode: 'lines', x: [cur.byType[t].avg, st.byType[t].avg], y: [TLABEL[t], TLABEL[t]], line: {color: P.mid, width: 2, dash: 'dot'}, hoverinfo: 'skip', showlegend: false}));
+  const dots = (name, color, get, pos) => ({name, type: 'scatter', mode: 'markers+text', x: rows.map(t => get(t)), y: rows.map(t => TLABEL[t]), text: rows.map(t => `<b>${r(get(t))}</b>`), textposition: pos,
+    textfont: {color: P.grey, size: 19}, marker: {size: 26, color, line: {width: 2, color: '#fff'}}, hovertemplate: `%{y}: %{x:.0f}<extra>${name}</extra>`});
+  plot('c-avg', [...conn, dots('RRNC', P.orange, t => cur.byType[t].avg, 'top center'), dots('Virginia', P.navy, t => st.byType[t].avg, 'bottom center')],
+    {xaxis: {title: {text: 'Avg. Total VQB5 Score'}, range: [545, 655], showgrid: false}, yaxis: {automargin: true, range: [-0.6, rows.length - 0.4], tickfont: {size: 18, color: P.grey}},
+     legend: {orientation: 'h', y: 1.12, x: 0.5, xanchor: 'center', font: {size: 18}}, margin: {t: 50, r: 30, b: 70, l: 190}});
+
   const B = S.bins.byType, tl = Object.fromEntries(TYPES.map(t => [t, levelsFromBins(B[t])]));
-  $('#t-levels').innerHTML = table(['Program type', ...DESC.map(lvHead)], [...order.map(t => [TSHORT[t], ...DESC.map(i => np(tl[t][i], sum(tl[t])))]), ['<b>All sites</b>', ...DESC.map(i => `<b>${np(levelsFromBins(cur.bins)[i], n)}</b>`)]]);
-  const hn = S.honor['2025-26'], names = ['Excellence Honor Roll', 'Improvement Honor Roll', 'Infant & Toddler Honor Roll'], keys = Object.keys(hn).filter(k => k !== '_unique');
+  $('#t-levels').innerHTML = table(['Program type', ...DESC.map(lvHead), {t: 'Avg.<br>points', cls: 'hl'}],
+    [...byAvg.map(t => [TSHORT[t], ...DESC.map(i => np(tl[t][i], sum(tl[t]))), r(cur.byType[t].avg)]), ['All sites', ...DESC.map(i => np(levelsFromBins(cur.bins)[i], n)), r(cur.avg)]], 1);
+
+  // honor roll: grouped bars with bold labels, colours as in the deck (Improvement navy, Infant/Toddler orange, Excellence dark grey)
+  const hn = S.honor['2025-26'], names = {Excellence: 'Excellence', 'Top Improvement in Interactions': 'Improvement', 'Top Infant and Toddler Quality': 'Infant/Toddler'};
+  const colors = {Improvement: P.navy, 'Infant/Toddler': P.orange, Excellence: P.grey};
+  const keys = ['Top Improvement in Interactions', 'Top Infant and Toddler Quality', 'Excellence'];
   $('#answer2').innerHTML = `${hn._unique} sites (${pc(hn._unique, n)}) are on at least one Honor Roll.`;
-  $('#t-honor').innerHTML = table(['Honor Roll', 'Centers', 'Home-based', 'Public schools', 'Total'], keys.map((k, j) => { const r = hn[k]; return [names[j], r.Center, r['Family Day Home'], k.includes('Infant') ? 'N/A' : r['Public School'], `<b>${sum(TYPES.map(x => r[x]))}</b>`]; }));
+  plot('c-honor', keys.map(k => ({name: names[k], type: 'bar', x: ORDER.map(t => TLABEL[t]), y: ORDER.map(t => hn[k][t]),
+    text: ORDER.map(t => k.includes('Infant') && t === 'Public School' ? '<b>N/A</b>' : `<b>${hn[k][t]}</b>`), textposition: 'outside', textfont: {size: 19, color: P.grey}, cliponaxis: false, marker: {color: colors[names[k]]},
+    hovertemplate: `%{x}<br>${names[k]} Honor Roll: %{y} sites<extra></extra>`})),
+    {barmode: 'group', bargap: 0.25, yaxis: {title: {text: 'Number of Honor Roll Sites'}}, xaxis: {tickfont: {size: 19}}, legend: {orientation: 'h', y: -0.2, x: 0.5, xanchor: 'center', font: {size: 18}}, margin: {t: 30, r: 20, b: 90, l: 70}});
 }
 init('types', draw, {filters: false, summary: true});
 </script></body></html>

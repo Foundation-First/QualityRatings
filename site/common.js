@@ -1,30 +1,32 @@
 // Shared data loading, filter bar, brand palette and chart helpers for all pages.
-// One meaning per colour (so a colour never changes meaning between charts):
-//   green  = RRNC (our region / our sites)      grey   = Virginia (state benchmark)
-//   orange -> light blue -> blue = rating levels, low -> high (a blue/orange ramp stays distinguishable for red-green colour blindness)
-//   tan / slate / brown = site types             dark / light green = emphasis within RRNC data (e.g. new vs returning, fall vs spring)
-const P = {blue: '#11689B', navy: '#0E3F66', green: '#99CA3C', rrnc: '#6FA82B', greenD: '#6FA82B', greenDD: '#3E6B0F', greenL: '#B7D98A', orange: '#F7941D', grey: '#85888B', lightBlue: '#9CC3DB', ink: '#23323f', grid: '#e9eef2', tan: '#D9B98A', slate: '#6B7F91', brown: '#8A5A2B', absent: '#CFD4D9'};
+// Palette taken from VDOE's Fall 2026 Data Deep Dive deck.
+//   navy = title bands, Virginia, table headers     orange = RRNC (the highlight colour in the deck's RRNC columns)
+//   amber -> orange -> teal -> blue -> navy = rating levels, low -> high (the deck's five-level colours)
+//   site types follow the deck's line chart: Centers navy, Home-based orange, Public schools teal
+const P = {navy: '#003A70', blue: '#0070C0', teal: '#2A9D8F', orange: '#FF6B35', amber: '#FFC000', grey: '#595959', mid: '#7F7F7F', light: '#BFBFBF',
+  sky: '#9DD0F7', peach: '#FFD699', cream: '#F3EBDD', fbg: '#064478', ink: '#262626', grid: '#E6E6E6', absent: '#D9D9D9',
+  rrnc: '#FF6B35', greenDD: '#003A70', greenL: '#9DD0F7', greenD: '#FF6B35', lightBlue: '#9DD0F7', tan: '#003A70', slate: '#2A9D8F', brown: '#FF6B35'};
 // ---- Rating scale -------------------------------------------------------------------------------------------
 // Total scores fall in five 100-point bands (the building block for every scale). A rating scale is a set of
 // levels, each a group of bands, ordered low -> high.
-//   three = VQB5 today: Needs Support 100-399 | Meets Expectations 400-699 | Exceeds Expectations 700-800
-//   five  = the coming 5-level system, built on the 100-point bands. VDOE's official level names are not yet
-//           confirmed, so levels are labelled by their point band (add names here once confirmed).
+//   three = VQB5 through 2025-26: Needs Support 100-399 | Meets Expectations 400-699 | Exceeds Expectations 700-800
+//   five  = VQB5's new levels (official names from VDOE's Fall 2026 Data Deep Dive): beginning with the 2026-27
+//           program year, with ratings issued in fall 2027.
 // The 3-level scale is the default. Add ?scale=5 to any page URL to preview the 5-level scale.
 const BANDS = ['399 or less', '400-499', '500-599', '600-699', '700-800'];
 const bandIdx = v => v == null ? -1 : v <= 399 ? 0 : v <= 499 ? 1 : v <= 599 ? 2 : v <= 699 ? 3 : 4;
 const bandCounts = list => { const c = BANDS.map(() => 0); list.forEach(s => { const i = bandIdx(s.tp); if (i >= 0) c[i]++; }); return c; };
 const SCHEMES = {
   three: {key: 'three', title: '3-level', groups: [[0], [1, 2, 3], [4]], levels: [
-    {name: 'Needs Support', short: 'Needs Support', pts: '100-399', color: P.orange, text: '#23323f'},
-    {name: 'Meets Expectations', short: 'Meets Expectations', pts: '400-699', color: P.lightBlue, text: '#23323f'},
+    {name: 'Needs Support', short: 'Needs Support', pts: '100-399', color: P.amber, text: P.ink},
+    {name: 'Meets Expectations', short: 'Meets Expectations', pts: '400-699', color: P.teal, text: '#fff'},
     {name: 'Exceeds Expectations', short: 'Exceeds Expectations', pts: '700-800', color: P.blue, text: '#fff'}]},
-  five: {key: 'five', title: '5-level (preview)', groups: [[0], [1], [2], [3], [4]], levels: [
-    {name: '399 or less', short: '399 or less', pts: '100-399', color: '#F7941D', text: '#23323f'},
-    {name: '400-499', short: '400-499', pts: '400-499', color: '#FBC77A', text: '#23323f'},
-    {name: '500-599', short: '500-599', pts: '500-599', color: '#BCD6E8', text: '#23323f'},
-    {name: '600-699', short: '600-699', pts: '600-699', color: '#6FA3C7', text: '#23323f'},
-    {name: '700-800', short: '700-800', pts: '700-800', color: '#11689B', text: '#fff'}]},
+  five: {key: 'five', title: '5-level', groups: [[0], [1], [2], [3], [4]], levels: [
+    {name: 'Needs Support', short: 'Needs Support', pts: '100-399', color: P.amber, text: P.ink},
+    {name: 'Approaching Expectations', short: 'Approaching Expectations', pts: '400-499', color: P.orange, text: P.ink},
+    {name: 'Meets Expectations', short: 'Meets Expectations', pts: '500-599', color: P.teal, text: '#fff'},
+    {name: 'Exceeds Expectations', short: 'Exceeds Expectations', pts: '600-699', color: P.blue, text: '#fff'},
+    {name: 'Distinguished', short: 'Distinguished', pts: '700-800', color: P.navy, text: '#fff'}]},
 };
 let scaleKey = 'three';
 try {
@@ -49,8 +51,8 @@ const TSHORT = {Center: 'Centers', 'Public School': 'Public schools', 'Family Da
 // A locality's school division. Counties are "<County> Public Schools"; these independent cities use their official division names.
 const DIST_OVERRIDE = {'Manassas': 'Manassas City Public Schools', 'Manassas Park': 'Manassas Park City Schools', 'Fredericksburg': 'Fredericksburg City Public Schools'};
 const distName = n => DIST_OVERRIDE[n] || `${n} Public Schools`;
-const TCOLOR = {Center: P.tan, 'Public School': P.slate, 'Family Day Home': P.brown};
-const TTEXT = {Center: '#23323f', 'Public School': '#fff', 'Family Day Home': '#fff'};
+const TCOLOR = {Center: P.navy, 'Public School': P.teal, 'Family Day Home': P.orange};
+const TTEXT = {Center: '#fff', 'Public School': '#fff', 'Family Day Home': P.ink};
 const $ = s => document.querySelector(s);
 const sum = a => a.reduce((x, y) => x + y, 0);
 const mean = a => a.length ? sum(a) / a.length : null;
@@ -58,8 +60,12 @@ const fmt = n => n == null ? '–' : n.toLocaleString();
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
 const pc = (v, n) => { if (!n) return '–'; const p = 100 * v / n; return p > 0 && p < 1 ? '<1%' : Math.round(p) + '%'; };
 // groups (optional): [[label, colspan], ...] draws a spanning header row above the column headings
-const table = (head, rows, numFrom = 1, groups) => `<table><thead>${groups ? `<tr class="grp">${groups.map(([l, n]) => `<th colspan="${n}">${l}</th>`).join('')}</tr>` : ''}<tr>${head.map((h, i) => `<th class="${i >= numFrom ? 'n' : ''}">${h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i >= numFrom ? 'n' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-const kpis = items => items.map(([b, s, c]) => `<div class="kpi"><b>${b}</b><span>${c ? `<i class="dot" style="background:${c}"></i>` : ''}${s}</span></div>`).join('');
+const table = (head, rows, numFrom = 1, groups) => {
+  const cls = h => typeof h === 'object' ? h.cls : '';
+  const hc = i => head[i] && typeof head[i] === 'object' ? head[i].cls : '';
+  return `<table><thead>${groups ? `<tr class="grp">${groups.map(([l, n]) => `<th colspan="${n}">${l}</th>`).join('')}</tr>` : ''}<tr>${head.map((h, i) => `<th class="${i >= numFrom ? 'n' : ''} ${cls(h)}">${typeof h === 'object' ? h.t : h}</th>`).join('')}</tr></thead><tbody>${rows.map(r => `<tr>${r.map((c, i) => `<td class="${i >= numFrom ? 'n' : ''} ${hc(i) === 'hl' ? 'hl' : ''}">${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+};
+const kpis = items => `<div class="statrow">${items.map(([b, s, c]) => `<div class="stat"><div class="sl">${c ? `<i class="dot" style="background:${c}"></i>` : ''}${s}</div><div class="sv">${b}</div></div>`).join('')}</div>`;
 async function loadJSON(name) { return (await fetch('data/' + name + '.json')).json(); }
 
 let state = {};
@@ -127,9 +133,9 @@ function update() {
 function plot(id, traces, layout = {}) {
   const base = {
     margin: {t: 10, r: 12, b: 70, l: 50}, paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
-    font: {family: "'Nunito Sans',system-ui,sans-serif", color: P.ink, size: 15}, legend: {orientation: 'h', y: -0.3},
-    xaxis: {gridcolor: P.grid, automargin: true, zeroline: false}, yaxis: {gridcolor: P.grid, automargin: true, zeroline: false},
-    hoverlabel: {font: {family: "'Nunito Sans',system-ui,sans-serif"}},
+    font: {family: "Calibri, Carlito, system-ui, sans-serif", color: P.grey, size: 16}, legend: {orientation: 'h', y: -0.3, x: 0.5, xanchor: 'center'},
+    xaxis: {showgrid: false, automargin: true, zeroline: false, linecolor: P.light, tickfont: {color: P.grey}}, yaxis: {gridcolor: P.grid, automargin: true, zeroline: false, tickfont: {color: P.mid}},
+    hoverlabel: {font: {family: "Calibri, Carlito, system-ui, sans-serif"}},
   };
   const lay = {...base, ...layout, xaxis: {...base.xaxis, ...(layout.xaxis || {})}, yaxis: {...base.yaxis, ...(layout.yaxis || {})}};
   Plotly.react(id, traces, lay, {displayModeBar: false, responsive: true});
@@ -172,7 +178,7 @@ function sankeyLevels(id, sites, years = ['2023-24', '2024-25', '2025-26']) {
     if (a !== NR && b !== NR) { moved.total += v; if (a !== b) moved.changed += v; }
     ltxt.push(`${years[c]} ${a === NR ? 'Not yet rated' : LEVELS[a].name} to ${years[c + 1]} ${b === NR ? 'Not yet rated' : LEVELS[b].name}`);
   });
-  const lay = {margin: {t: 30, r: 10, b: 10, l: 10}, paper_bgcolor: 'rgba(0,0,0,0)', font: {family: "'Nunito Sans',system-ui,sans-serif", color: P.ink, size: 15},
+  const lay = {margin: {t: 30, r: 10, b: 10, l: 10}, paper_bgcolor: 'rgba(0,0,0,0)', font: {family: "Calibri, Carlito, system-ui, sans-serif", color: P.grey, size: 16},
     annotations: years.map((yy, c) => ({text: `<b>${yy}</b>`, x: [0, 0.5, 1][c] ?? c / (NCOL - 1), xanchor: ['left', 'center', 'right'][c] ?? 'center', y: 1.06, yref: 'paper', showarrow: false, font: {size: 15}}))};
   sankeyLevels.lastMoved = moved;
   Plotly.react(id, [{type: 'sankey', arrangement: 'fixed', node: {pad: 14, thickness: 18, line: {width: 0}, label, color, x, y, hovertemplate: '%{label}<extra></extra>'},
@@ -224,11 +230,23 @@ async function init(page, cb, opts = {}) {
 const NAV = `<header><div class="wrap">
 <div class="brand"><img src="img/ff-logo.png" alt="Foundation First – Building Early Childhood Success"><h1>Ready Region North Central - VQB5 Quality Ratings Explorer<small>2025-26 program year</small></h1>
 <div class="logos"><img class="rr" src="img/rrnc-logo.png" alt="Ready Region North Central" style="height:52px"></div></div>
-<nav><a data-p="summary" href="index.html">Home</a><a data-p="locality" href="locality.html">My locality</a><a data-p="time" href="over-time.html">Over time</a><a data-p="types" href="types.html">Program types</a><a data-p="class" href="class.html">CLASS</a><a data-p="about" href="about.html">About</a></nav></div></header>
+<nav><a data-p="summary" href="index.html">Home</a><a data-p="locality" href="locality.html">My locality</a><a data-p="time" href="over-time.html">Over time</a><a data-p="types" href="types.html">Program types</a><a data-p="class" href="class.html">CLASS</a><a data-p="five" href="five-level.html">Five-level ratings</a><a data-p="about" href="about.html">About</a></nav></div></header>
 <div id="filters"><div class="wrap"><div class="bar"><span id="count"></span><button id="ftoggle" type="button" aria-expanded="false">Narrow down (optional)</button></div><div class="grid-f"></div><div id="smalln" class="smalln" role="status" style="display:none"></div></div></div>`;
 const FOOT = `<footer class="wrap"><p><b>Source:</b> <a href="https://earlychildhoodquality.doe.virginia.gov/quality-ratings/">Virginia Department of Education VQB5 Quality Rating Data</a> and RRNC CLASS summaries. <span id="asof"></span> Independent visualization; VDOE's data is the official record. <a href="about.html">About &amp; definitions</a></p></footer>`;
-document.head.insertAdjacentHTML('beforeend', '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;700;800&display=swap">');
+document.head.insertAdjacentHTML('beforeend', '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&display=swap">');
 document.body.insertAdjacentHTML('afterbegin', NAV);
-if (scaleKey === 'five') document.querySelector('header').insertAdjacentHTML('afterend', '<div class="preview-banner"><div class="wrap">Preview: the coming 5-level rating scale, shown as 100-point bands. the official level names from VDOE are pending. <a href="?scale=3">Back to the current 3-level view</a></div></div>');
+if (scaleKey === 'five') document.querySelector('header').insertAdjacentHTML('afterend', '<div class="preview-banner"><div class="wrap">Preview: the five-level ratings VDOE will use beginning with the 2026-27 program year (ratings issued fall 2027), applied to 2025-26 scores. <a href="?scale=3">Back to the current 3-level view</a></div></div>');
 document.body.insertAdjacentHTML('beforeend', FOOT);
 fetch('data/meta.json').then(r => r.json()).then(m => { const el = $('#asof'); if (el) el.textContent = `Updated ${new Date(m.built + 'T12:00:00').toLocaleDateString('en-US', {month: 'long', day: 'numeric', year: 'numeric'})}.`; }).catch(() => {});
+
+// Turn each page's first heading into the deck-style navy title band (pages with a .hero keep their own banner).
+(function () {
+  const h2 = document.querySelector('main > section:first-child > h2');
+  if (!h2 || document.querySelector('.hero')) return;
+  const band = document.createElement('div');
+  band.className = 'band';
+  band.innerHTML = `<div class="wrap"><h1>${h2.innerHTML}</h1></div>`;
+  const anchor = document.querySelector('.preview-banner') || document.querySelector('header');
+  anchor.after(band);
+  h2.remove();
+})();
