@@ -12,7 +12,7 @@
 
 <section style="margin-top:34px"><h2>How sites would be rated</h2>
 <div class="viewseg" id="who" role="group" aria-label="Group" style="margin-bottom:12px"></div>
-<div class="answer" id="modeled" style="font-size:24px"></div>
+<div class="answer" id="modeled" style="font-size:21px"></div>
 <div class="card"><div id="c-sankey" class="chart tall"></div></div>
 <p class="small">Modeled with 2025-26 scores. The current three-level rating is on the left; the same scores placed in the five new levels are on the right.</p></section>
 
@@ -52,12 +52,12 @@ function draw() {
   const yl = place(left), yr = place(right);
   const label = [...left, ...right].map(x => `${x.name}<br>N=${fmt(x.v)}`);
   const src = [0, 1, 1, 1, 2], tgt = [3, 4, 5, 6, 7], val = [bins[4], bins[3], bins[2], bins[1], bins[0]];   // left idx 0-2, right idx 3-7
-  const link = {source: src, target: tgt, value: val.map(v => Math.max(v, 0.0001)), color: val.map(() => 'rgba(191,191,191,0.65)'), hovertemplate: '%{value:,.0f} sites<extra></extra>'};
+  const link = {source: src, target: tgt, value: val.map(v => Math.max(v, 0.0001)), color: val.map(() => 'rgba(133,136,139,0.35)'), hovertemplate: '%{value:,.0f} sites<extra></extra>'};
   Plotly.react('c-sankey', [{type: 'sankey', arrangement: 'fixed', node: {pad: 16, thickness: 22, line: {width: 0}, label, color: [...left, ...right].map(x => x.c), x: [0.2, 0.2, 0.2, 0.78, 0.78, 0.78, 0.78, 0.78], y: [...yl, ...yr], hovertemplate: '%{label}<extra></extra>'}, link,
-      textfont: {size: 17, color: P.grey}}],
-    {margin: {t: 20, r: 10, b: 20, l: 10}, paper_bgcolor: 'rgba(0,0,0,0)', font: {family: 'Calibri, Carlito, system-ui, sans-serif', size: 17, color: P.grey},
-     annotations: [{text: '<b>Current<br>3-level<br>ratings</b>', x: 0.0, y: 0.5, xref: 'paper', yref: 'paper', showarrow: false, bgcolor: P.navy, font: {color: '#fff', size: 17}, borderpad: 8, xanchor: 'left'},
-       {text: '<b>Modeled<br>ratings with<br>5 levels</b>', x: 1.0, y: 0.5, xref: 'paper', yref: 'paper', showarrow: false, bgcolor: P.navy, font: {color: '#fff', size: 17}, borderpad: 8, xanchor: 'right'}]},
+      textfont: {size: 16, color: P.ink}}],
+    {margin: {t: 20, r: 10, b: 20, l: 10}, paper_bgcolor: 'rgba(0,0,0,0)', font: {family: "'Nunito Sans',system-ui,sans-serif", size: 16, color: P.ink},
+     annotations: [{text: '<b>Current<br>3-level<br>ratings</b>', x: 0.0, y: 0.5, xref: 'paper', yref: 'paper', showarrow: false, bgcolor: P.navy, font: {color: '#fff', size: 16}, borderpad: 8, xanchor: 'left'},
+       {text: '<b>Modeled<br>ratings with<br>5 levels</b>', x: 1.0, y: 0.5, xref: 'paper', yref: 'paper', showarrow: false, bgcolor: P.navy, font: {color: '#fff', size: 16}, borderpad: 8, xanchor: 'right'}]},
     {displayModeBar: false, responsive: true});
 }
 init('five', draw, {filters: false, summary: true, bench: true});

@@ -35,9 +35,9 @@ tan / slate / brown = site types, dark / light green = emphasis within RRNC data
 `python scripts/build_data.py` rebuilds `site/data/*.json` (including `meta.json`, which drives the "data last refreshed" line in the footer).
 
 ## Look
-The visual system follows VDOE's Fall 2026 Data Deep Dive deck (kept in `raw/inspo/deepdive`, git-ignored): navy title band with a light-weight white title, a bold grey takeaway sentence, one exhibit on white, navy-header tables with an orange RRNC header and a sky-blue Average column, peach stat cells, thick-line charts with bold direct labels, dumbbell charts with round markers, and the dark-blue Foundation First banner with the four-colour top stripe.
-Palette and rating-level colours are defined once in `site/common.js` (`P`, `SCHEMES`): RRNC orange, Virginia navy/dark grey, Needs Support amber, Approaching orange, Meets teal, Exceeds blue, Distinguished navy.
-Text is 16px or larger everywhere (charts included). Calibri is used where installed, with Carlito (metric-compatible) as the web fallback.
+The visual system is Foundation First's: Nunito Sans, navy banner with a green base edge, white cards with soft shadows, shaded table headers, colour-swatch tiles, and a short green rule under each heading.
+Palette and rating-level colours are defined once in `site/common.js` (`P`, `SCHEMES`): green = RRNC, grey = Virginia, orange -> light blue -> blue = rating levels (five levels use a five-step version of the same ramp).
+Text is 16px or larger everywhere (chart axis text is 15px).
 
 ## Rating levels
 `?scale=5` on any page shows 2025-26 scores in VDOE's new five levels (official names from the deck); `?scale=3` returns to the three-level view.

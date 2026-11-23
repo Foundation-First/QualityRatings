@@ -44,8 +44,8 @@ function draw() {
   if (kind) rows.push(['RRNC', levelsFromBins(SUMMARY.years['2025-26'].bins), SUMMARY.years['2025-26'].n]);
   rows.push(['Virginia', levelsFromBins(BENCH.state.all.bins), BENCH.state.all.n]);
   plot('c-share', LEVELS.map((l, i) => ({name: l.name, type: 'bar', orientation: 'h', y: rows.map(r => `${r[0]} (${fmt(r[2])})`), x: rows.map(r => r[2] ? 100 * r[1][i] / r[2] : 0), customdata: rows.map(r => r[1][i]), marker: {color: l.color},
-    text: rows.map(r => { const p = r[2] ? 100 * r[1][i] / r[2] : 0; return p >= 6 ? `<b>${Math.round(p)}%</b>` : ''; }), textposition: 'inside', insidetextfont: {color: l.text, size: 18}, hovertemplate: `%{y}<br>${l.name}: %{customdata} sites (%{x:.0f}%)<extra></extra>`})),
-    {barmode: 'stack', xaxis: {title: '% of sites', range: [0, 100]}, yaxis: {autorange: 'reversed', automargin: true}, legend: {orientation: 'h', y: -0.42, x: 0.5, xanchor: 'center', font: {size: 17}}, margin: {t: 10, r: 10, b: 110, l: 200}});
+    text: rows.map(r => { const p = r[2] ? 100 * r[1][i] / r[2] : 0; return p >= 6 ? `<b>${Math.round(p)}%</b>` : ''; }), textposition: 'inside', insidetextfont: {color: l.text, size: 16}, hovertemplate: `%{y}<br>${l.name}: %{customdata} sites (%{x:.0f}%)<extra></extra>`})),
+    {barmode: 'stack', xaxis: {title: '% of sites', range: [0, 100]}, yaxis: {autorange: 'reversed', automargin: true}, legend: {orientation: 'h', y: -0.4}, margin: {t: 10, r: 10, b: 110, l: 200}});
   $('#note').textContent = n < 5 ? `Based on ${n} ${n === 1 ? 'site' : 'sites'}.` : kind === 'dist' ? 'Counts only public-school sites that take part in VQB5 (pre-K and birth-to-five programs).' : '';
 }
 readHash();

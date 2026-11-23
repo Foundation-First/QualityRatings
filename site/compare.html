@@ -38,8 +38,8 @@
 <script src="common.js"></script>
 <script>
 // Entity colours: dark ink = the site, greens = RRNC data (darker = more specific), grey = Virginia. Line styles differ too, so colour is never the only cue.
-const LV = {site: {color: P.ink, text: P.ink, short: 'Site', dash: 'solid', w: 4}, dist: {color: P.teal, text: '#1f7a6e', short: 'School district', dash: 'solid', w: 3},
-  loc: {color: P.blue, text: P.blue, short: 'Locality', dash: 'dashdot', w: 3}, region: {color: P.orange, text: '#c2410c', short: 'RR North Central', dash: 'dash', w: 3}, state: {color: P.navy, text: P.navy, short: 'Virginia', dash: 'dot', w: 3}};
+const LV = {site: {color: P.ink, text: P.ink, short: 'Site', dash: 'solid', w: 4}, dist: {color: P.greenDD, text: P.greenDD, short: 'School district', dash: 'solid', w: 3},
+  loc: {color: P.greenL, text: '#5E8A1A', short: 'Locality', dash: 'dashdot', w: 3}, region: {color: P.rrnc, text: '#4F8A12', short: 'RR North Central', dash: 'dash', w: 3}, state: {color: P.grey, text: '#666', short: 'Virginia', dash: 'dot', w: 3}};
 const ord = n => { const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); };
 const ordP = p => p == null ? '–' : ord(p);
 const f0 = v => v == null ? '–' : Math.round(v).toLocaleString();
@@ -187,7 +187,7 @@ function draw() {
     ...DESC.map(i => [LEVELS[i].name + (LEVELS[i].name === LEVELS[i].pts ? '' : ` (${LEVELS[i].pts.replace('-', '–')})`), ...levels.map(l => l.k === 'site' ? yes(levelIdx(site.tp) === i) : pc(levelsFromBins(l.bins)[i], sum(l.bins)))]),
   ];
   if (site) rows.push(["Site's percentile in this group", ...levels.map(l => l.k === 'site' ? '–' : ordP(pctOf(l)))]);
-  $('#t-compare').innerHTML = table(['', ...levels.map(l => ({t: LV[l.k].short, cls: l.k === 'state' ? '' : 'rr'}))], rows);
+  $('#t-compare').innerHTML = table(['', ...levels.map(l => `<span style="color:${LV[l.k].color}">●</span> ${LV[l.k].short}`)], rows);
   $('#n-compare').textContent = `Region and Virginia columns include ${sName}. Points are 2025-26 VQB5 rating points (100–800). ` + (site ? 'Percentile = share of the group scoring below this site (ties count half). ' : '');
 
   // Ranking: school districts (public schools) or localities, as a dot plot

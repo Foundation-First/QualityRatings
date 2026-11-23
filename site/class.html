@@ -55,15 +55,15 @@ function draw() {
   ]);
 
   plot('c-fs', ['Fall 2025', 'Spring 2026'].map((s, i) => ({name: s, type: 'bar', x: AGES, y: AGES.map(a => L.avg[a][i]), text: AGES.map(a => f2(L.avg[a][i])), textposition: 'outside', cliponaxis: false,
-    marker: {color: i ? P.navy : P.sky}, hovertemplate: `%{x} CLASS, ${s}: %{y:.2f}<extra></extra>`})), {barmode: 'group', yaxis: {title: 'Average total CLASS score', range: [0, 7]}});
+    marker: {color: i ? P.rrnc : P.greenL}, hovertemplate: `%{x} CLASS, ${s}: %{y:.2f}<extra></extra>`})), {barmode: 'group', yaxis: {title: 'Average total CLASS score', range: [0, 7]}});
   const d = AGES.map(a => L.avg[a][1] - L.avg[a][0]);
   const up = AGES.filter((a, i) => d[i] > 0), down = AGES.filter((a, i) => d[i] < 0);
   const sg = x => (x > 0 ? '+' : x < 0 ? '−' : '') + Math.abs(x).toFixed(2);
   $('#i-fs').innerHTML = `Change from fall to spring: ` + AGES.map((a, i) => `${a} ${sg(d[i])}`).join(', ') + `.`;
 
-  const lbl = L.springIntervals, cols = ['#DCEBF7', '#9DD0F7', '#0070C0', '#003A70'];
+  const lbl = L.springIntervals, cols = ['#E6F2D0', '#C5E08F', '#8DC152', '#4F8A12'];
   plot('c-spring', lbl.map((iv, i) => ({name: iv, type: 'bar', orientation: 'h', y: AGES.map(a => a + ' (' + sum(L.spring[a]) + ')'), x: AGES.map(a => 100 * L.spring[a][i] / sum(L.spring[a])), marker: {color: cols[i]},
-    customdata: AGES.map(a => L.spring[a][i]), text: AGES.map(a => (100 * L.spring[a][i] / sum(L.spring[a])) >= 6 ? Math.round(100 * L.spring[a][i] / sum(L.spring[a])) + '%' : ''), textposition: 'inside', insidetextfont: {color: i >= 2 ? '#fff' : P.ink},
+    customdata: AGES.map(a => L.spring[a][i]), text: AGES.map(a => (100 * L.spring[a][i] / sum(L.spring[a])) >= 6 ? Math.round(100 * L.spring[a][i] / sum(L.spring[a])) + '%' : ''), textposition: 'inside', insidetextfont: {color: i === 3 ? '#fff' : P.ink},
     hovertemplate: `%{y}<br>${iv}: %{customdata} classrooms (%{x:.0f}%)<extra></extra>`})),
     {barmode: 'stack', xaxis: {title: '% of classrooms', range: [0, 100]}, yaxis: {autorange: 'reversed'}, margin: {t: 10, r: 10, b: 70, l: 110}, legend: {orientation: 'h', y: -0.35, title: {text: 'Score:  '}}});
   const low = sum(AGES.map(a => L.spring[a][0] + L.spring[a][1]));
@@ -87,14 +87,14 @@ function drawTotals() {
   const X = CLASS.external;
   $('#p-total').textContent = 'Classrooms observed (RRNC / Virginia): ' + AGES.map(a => `${a} ${fmt(X[a].n.nc)} / ${fmt(X[a].n.state)}`).join(', ') + '. As of June 2026.';
   plot('c-total', [{name: 'RRNC', type: 'bar', x: AGES, y: AGES.map(a => X[a].total.nc), text: AGES.map(a => f2(X[a].total.nc)), textposition: 'outside', cliponaxis: false, marker: {color: P.rrnc}, hovertemplate: '%{x}: %{y:.2f}<extra>RRNC</extra>'},
-    {name: 'Virginia', type: 'bar', x: AGES, y: AGES.map(a => X[a].total.state), text: AGES.map(a => f2(X[a].total.state)), textposition: 'outside', cliponaxis: false, marker: {color: P.navy}, hovertemplate: '%{x}: %{y:.2f}<extra>Virginia</extra>'}],
+    {name: 'Virginia', type: 'bar', x: AGES, y: AGES.map(a => X[a].total.state), text: AGES.map(a => f2(X[a].total.state)), textposition: 'outside', cliponaxis: false, marker: {color: P.grey}, hovertemplate: '%{x}: %{y:.2f}<extra>Virginia</extra>'}],
     {barmode: 'group', yaxis: {title: 'Average total CLASS score (1–7)', range: [0, 7]}});
 }
 function drawExternal() {
   const E = CLASS.external[age];
   const grp = (id, labels, nc, st, title, rng, margin) => plot(id, [
     {name: 'RRNC', type: 'bar', x: nc, y: labels, orientation: 'h', marker: {color: P.rrnc}, text: nc.map(f2), textposition: 'outside', cliponaxis: false, hovertemplate: '%{y}: %{x:.2f}<extra>RRNC</extra>'},
-    {name: 'Virginia', type: 'bar', x: st, y: labels, orientation: 'h', marker: {color: P.navy}, text: st.map(f2), textposition: 'outside', cliponaxis: false, hovertemplate: '%{y}: %{x:.2f}<extra>Virginia</extra>'}],
+    {name: 'Virginia', type: 'bar', x: st, y: labels, orientation: 'h', marker: {color: P.grey}, text: st.map(f2), textposition: 'outside', cliponaxis: false, hovertemplate: '%{y}: %{x:.2f}<extra>Virginia</extra>'}],
     {barmode: 'group', xaxis: {title, range: rng || [0, 7.6]}, yaxis: {autorange: 'reversed', ticklabelstandoff: 8}, margin: margin || {t: 10, r: 20, b: 70, l: 190}});
   grp('c-dims', E.dims.map(x => x[0]), E.dims.map(x => x[1]), E.dims.map(x => x[2]), 'Average score (1–7)', null, {t: 10, r: 30, b: 70, l: 230});
   const lo = [...E.dims].sort((a, b) => a[1] - b[1]), hi = lo[lo.length - 1];

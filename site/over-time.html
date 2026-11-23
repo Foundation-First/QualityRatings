@@ -44,13 +44,13 @@ function draw() {
     (c.length ? `The ${c.length} ${who} that have participated since 2023-24 averaged ${r(same[0])}, ${r(same[1])} and ${r(same[2])}. ` : '') +
     (T.second.n ? `Sites that joined in 2024-25 averaged ${r(T.second.avgFirstYear)} in their first year and ${r(T.second.avg)} in their second (${T.second.n} ${T.second.n === 1 ? 'site' : 'sites'}).` : '');
 
-  // thick lines, round markers and bold direct labels, as in the deck's line chart
-  const line = (name, y, color, dash) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y, text: y.map(v => `<b>${r(v)}</b>`), textfont: {size: 19, color: P.grey},
-    line: {color, width: 5, dash}, marker: {size: 13, color}, hovertemplate: `%{x}: %{y:.0f}<extra>${name}</extra>`});
-  const series = [line('RRNC, all sites that year', all, P.orange), line(`RRNC, participating since 2023-24 (${c.length} sites)`, same, P.navy), line('Virginia, all sites', va, P.grey, 'dash')];
+  // labelled points: RRNC green, Virginia grey
+  const line = (name, y, color, dash) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y, text: y.map(v => `<b>${r(v)}</b>`), textfont: {size: 16, color: P.ink},
+    line: {color, width: 4, dash}, marker: {size: 10, color}, hovertemplate: `%{x}: %{y:.0f}<extra>${name}</extra>`});
+  const series = [line('RRNC, all sites that year', all, P.rrnc), line(`RRNC, participating since 2023-24 (${c.length} sites)`, same, P.greenDD, 'dot'), line('Virginia, all sites', va, P.grey, 'dash')];
   placeLabels(series);
   const vals = series.flatMap(s => s.y);
-  plot('c-line', series, {yaxis: {title: {text: 'Avg. Total VQB5 Score'}, range: [Math.min(...vals) - 8, Math.max(...vals) + 8]}, legend: {orientation: 'h', y: -0.22, x: 0.5, xanchor: 'center', font: {size: 17}}, margin: {t: 20, r: 40, b: 100, l: 70}, xaxis: {tickfont: {size: 17}}});
+  plot('c-line', series, {yaxis: {title: {text: 'Avg. Total VQB5 Score'}, range: [Math.min(...vals) - 8, Math.max(...vals) + 8]}, legend: {orientation: 'h', y: -0.22}, margin: {t: 20, r: 40, b: 100, l: 70}, xaxis: {}});
 
   const lv = YRS.map(y => levelsFromBins(yr(y).bins));
   $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2))], [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => np(lv[k][i], yr(YRS[k]).n))]), ['Sites', ...YRS.map(y => yr(y).n)]]);
