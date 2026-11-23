@@ -31,13 +31,12 @@ function placeLabels(series) {
 }
 
 function draw() {
-  if (!ALL || !SUMMARY) return;
+  if (!SUMMARY) return;
   box.querySelectorAll('button').forEach(b => { const on = b.dataset.t === type; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
   const key = type || 'all', Y = SUMMARY.years, r = Math.round;
   const yr = y => type ? Y[y].byType[type] : Y[y];
   const all = YRS.map(y => yr(y).avg), va = YRS.map(y => type ? SUMMARY.statewide[y].byType[type].avg : SUMMARY.statewide[y].avg);
-  const c = ALL.filter(s => (!type || s.type === type) && YRS.every(y => (y === '2025-26' ? s.tp : s.hist[y]?.tp) != null));
-  const same = YRS.map(y => mean(c.map(s => y === '2025-26' ? s.tp : s.hist[y].tp)));
+  const SS = SUMMARY.sameSites[key], c = {length: SS.n}, same = YRS.map(y => SS.avg[y]);
   const subject = type ? TLABEL[type] : 'RRNC sites', who = {'': 'sites', Center: 'centers', 'Public School': 'public-school sites', 'Family Day Home': 'home-based programs'}[type];
   const T = SUMMARY.tenure[key];
   $('#answer').innerHTML = `${subject} averaged ${r(all[0])} points in 2023-24, ${r(all[1])} in 2024-25 and ${r(all[2])} in 2025-26. ` +
@@ -58,5 +57,5 @@ function draw() {
   const rows = [['First year (new in 2025-26)', T.first], ['Second year (joined in 2024-25)', T.second], ['Third year (participating since 2023-24)', T.third]].filter(x => x[1].n);
   $('#t-tenure').innerHTML = table(['Years in VQB5', 'Sites', {t: 'Average score, 2025-26', cls: 'hl'}], rows.map(([l, d]) => [l, d.n, r(d.avg)]), 1);
 }
-init('time', draw, {filters: false, sites: true, summary: true});
+init('time', draw, {filters: false, summary: true});
 </script></body></html>

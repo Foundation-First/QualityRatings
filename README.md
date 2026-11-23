@@ -3,16 +3,17 @@
 Filterable charts built from the Virginia Department of Education's public
 [VQB5 Quality Rating Data](https://earlychildhoodquality.doe.virginia.gov/quality-ratings/).
 
-- `site/` – the static website (publish this folder). Pages (answer-first, for busy readers): Home (headline numbers + question menu), My locality (pick a place, read one sentence), Over time (same sites across years, with a program-type switch), Program types (+ Honor Roll), CLASS (essentials first, detail collapsed), and Compare (site → district → region → state lookup, linked from My locality). About & definitions holds the glossary. Old URLs (`ratings`, `trends`, `programs`, `explore`) redirect to the nearest new page.
+- `site/` – the static website (publish this folder). Pages (answer-first, for busy readers): Home (headline numbers + question menu), Over time (same sites across years, with a program-type switch), Program types (+ Honor Roll), CLASS (essentials first, detail collapsed), and Compare (site → district → region → state lookup, linked from My locality). About & definitions holds the glossary. Old URLs (`ratings`, `trends`, `programs`, `explore`) redirect to the nearest new page.
   Only Ready Region 8 site records are published; statewide data appears only as aggregates (`summary.json`) for comparison.
 - `scripts/class_data.py` – CLASS/coaching figures transcribed from the regional handouts and VDOE's external CLASS report (not in the workbooks). Edit and re-run when new handouts come out.
-- `scripts/build_data.py` – cleans `raw/*.xlsx` into `site/data/sites.json`.
+- `scripts/build_data.py` – cleans `raw/*.xlsx` into the aggregate files in `site/data/` (published) and `internal/data/sites.json` (site-level records, git-ignored, never published).
+- `scripts/make_report.py` – internal one-page reports for a locality, school district, site or group of sites (`--help` for examples). Output goes to `internal/reports/`; every page carries an "as of" date and an approval-before-sharing note.
 - `raw/` – downloaded VDOE workbooks (git-ignored; re-download from the VDOE page).
 
 ## Refresh the data
 1. Download the new workbook(s) from the VDOE page into `raw/` and update the file names in `scripts/build_data.py`.
 2. `pip install pandas openpyxl` then `python scripts/build_data.py`.
-3. Check `site/data/sites.json` changed, then commit and push.
+3. Check the files in `site/data/` changed, then commit and push. Never move `internal/` into `site/`.
 
 ## Preview locally
 `cd site && python -m http.server 8000` and open http://localhost:8000 (needed because the pages fetch the JSON).

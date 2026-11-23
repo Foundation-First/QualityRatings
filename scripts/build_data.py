@@ -1,4 +1,4 @@
-"""Clean the VDOE VQB5 workbooks into site/data/sites.json (North Central sites only)
+"""Clean the VDOE VQB5 workbooks into internal/data/sites.json (site-level records, never published)
 and site/data/summary.json (North Central summary + statewide benchmark aggregates).
 
 Only Ready Region 8 site-level records are published. Statewide figures are
@@ -92,6 +92,12 @@ def tenure(df):
                 second=dict(n=int(len(second)), avg=r(second.TotalPts.mean()), avgFirstYear=r(second['Total Points: 2024-2025'].mean())),
                 third=dict(n=int(len(third)), avg=r(third.TotalPts.mean())))
 summary['tenure'] = {k: tenure(a if k == 'all' else a[a.SiteType == k]) for k in ['all'] + TYPES}
+
+# ---- sites rated in all three years: average points each year (aggregate only, no site identifiers) ----
+def same_sites(df):
+    d = df[df['Total Points: 2024-2025'].notna() & df['Total Points: 2023-2024'].notna()]
+    return dict(n=int(len(d)), avg={'2023-24': round(float(d['Total Points: 2023-2024'].mean()), 1), '2024-25': round(float(d['Total Points: 2024-2025'].mean()), 1), '2025-26': round(float(d.TotalPts.mean()), 1)} if len(d) else {})
+summary['sameSites'] = {k: same_sites(a if k == 'all' else a[a.SiteType == k]) for k in ['all'] + TYPES}
 json.dump(summary, open('site/data/summary.json', 'w'), separators=(',', ':'))
 
 # ---- statewide benchmark aggregates for the Compare page (no site identifiers) ----
@@ -112,6 +118,8 @@ def lst(v, sep):
     if pd.isna(v) or str(v).strip() in ('None', 'NA', ''): return []
     return [x.strip() for x in re.split(sep, str(v)) if x.strip()]
 
+import os
+os.makedirs('internal/data', exist_ok=True)   # site-level records stay out of the published site/ folder
 rows = []
 for r in a.to_dict('records'):
     rooms = lst(r['ClassroomsServed'], r';\s*')
@@ -129,7 +137,7 @@ for r in a.to_dict('records'):
         hist={y: h for y, h in hist.items() if h['rating']},
     ))
 
-json.dump(dict(year='2025-26', region=REGION, sites=rows), open('site/data/sites.json', 'w'), separators=(',', ':'))
+json.dump(dict(year='2025-26', region=REGION, sites=rows), open('internal/data/sites.json', 'w'), separators=(',', ':'))
 import datetime
 json.dump(dict(built=datetime.date.today().isoformat(), vdoeWorkbook='2025-26 VQB5 Quality Rating Data for Website (VDOE file dated 2026-09-29)'), open('site/data/meta.json', 'w'))
 print(len(rows), 'North Central sites written')
