@@ -6,8 +6,11 @@
 <section><h2>Is quality improving?</h2>
 <div class="viewseg" id="types" role="group" aria-label="Program type" style="margin-bottom:14px"></div></section>
 <div class="answer" id="answer"></div>
-<div class="card"><h3>Average score, same sites each year</h3><div id="c-line" class="chart short"></div></div>
-<div class="card" style="margin-top:14px"><h3>Ratings each year</h3><div class="tbl" id="t-levels"></div></div>
+<div class="card"><h3>Average score each year</h3><div id="c-line" class="chart short"></div></div>
+<div class="grid" style="margin-top:16px">
+ <div class="card"><h3>Ratings each year</h3><div class="tbl" id="t-levels"></div></div>
+ <div class="card"><h3>Who was in the program each year</h3><div class="tbl wrap1" id="t-roster"></div></div>
+</div>
 </main>
 <script src="common.js"></script>
 <script>
@@ -18,21 +21,42 @@ const box = $('#types');
 box.innerHTML = OPTS.map(([v, l]) => `<button type="button" data-t="${v}">${l}</button>`).join('');
 box.onclick = e => { if (e.target.dataset.t === undefined) return; type = e.target.dataset.t; draw(); };
 
+// label each point above the highest line and below the lowest so the numbers do not collide
+function placeLabels(series) {
+  series.forEach(s => { s.textposition = YRS.map((_, k) => {
+    const v = series.map(x => x.y[k]), hi = Math.max(...v), lo = Math.min(...v), me = s.y[k];
+    if (me === hi) return 'top center'; if (me === lo) return 'bottom center';
+    return hi - me >= me - lo ? 'top center' : 'bottom center';   // the middle line labels itself in the wider gap
+  }); });
+}
+
 function draw() {
   if (!ALL || !SUMMARY) return;
   box.querySelectorAll('button').forEach(b => { const on = b.dataset.t === type; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
-  const list = ALL.filter(s => !type || s.type === type);
-  const c = list.filter(s => YRS.every(y => (y === '2025-26' ? s.tp : s.hist[y]?.tp) != null));
-  const tps = YRS.map(y => c.map(s => y === '2025-26' ? s.tp : s.hist[y].tp));
-  const avg = tps.map(a => mean(a)), va = YRS.map(y => type ? SUMMARY.statewide[y].byType[type].avg : SUMMARY.statewide[y].avg);
-  const who = {'': 'sites', Center: 'centers', 'Public School': 'public-school sites', 'Family Day Home': 'home-based programs'}[type];
-  $('#answer').innerHTML = c.length ? `The ${c.length} ${who} that took part in all three years averaged ${Math.round(avg[0])} points in 2023-24, ${Math.round(avg[1])} in 2024-25 and ${Math.round(avg[2])} in 2025-26.` : 'No sites in this group took part in all three years.';
-  plot('c-line', [
-    {name: 'RRNC (same sites each year)', type: 'scatter', mode: 'lines+markers+text', x: YRS, y: avg, text: avg.map(v => Math.round(v)), textposition: 'top center', line: {color: P.rrnc, width: 3}, marker: {size: 9}, hovertemplate: '%{x}: %{y:.0f}<extra>RRNC</extra>'},
-    {name: 'Virginia (all sites)', type: 'scatter', mode: 'lines+markers+text', x: YRS, y: va, text: va.map(v => Math.round(v)), textposition: 'bottom center', line: {color: P.grey, width: 3}, marker: {size: 9}, hovertemplate: '%{x}: %{y:.0f}<extra>Virginia</extra>'}],
-    {yaxis: {title: 'Average points'}, legend: {orientation: 'h', y: -0.3}});
-  const lv = tps.map(a => levelsFromBins(bandCounts(a.map(tp => ({tp})))));
-  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2))], [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => np(lv[k][i], c.length))]), ['<b>Sites</b>', ...YRS.map(() => `<b>${c.length}</b>`)]]);
+  const key = type || 'all', Y = SUMMARY.years;
+  const yr = y => type ? Y[y].byType[type] : Y[y];
+  const all = YRS.map(y => yr(y).avg), va = YRS.map(y => type ? SUMMARY.statewide[y].byType[type].avg : SUMMARY.statewide[y].avg);
+  const c = ALL.filter(s => (!type || s.type === type) && YRS.every(y => (y === '2025-26' ? s.tp : s.hist[y]?.tp) != null));
+  const same = YRS.map(y => mean(c.map(s => y === '2025-26' ? s.tp : s.hist[y].tp)));
+  const subject = type ? TLABEL[type] : 'RRNC sites', who = {'': 'sites', Center: 'centers', 'Public School': 'public-school sites', 'Family Day Home': 'home-based programs'}[type];
+  const r = Math.round;
+  $('#answer').innerHTML = `${subject} averaged ${r(all[0])} points in 2023-24, ${r(all[1])} in 2024-25 and ${r(all[2])} in 2025-26. ` +
+    (c.length ? `The ${c.length} ${who} that took part in all three years averaged ${r(same[0])}, ${r(same[1])} and ${r(same[2])}.` : '');
+  const line = (name, y, color, extra) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y, text: y.map(v => r(v)), line: {color, width: 3, ...extra}, marker: {size: 9}, hovertemplate: `%{x}: %{y:.0f}<extra>${name}</extra>`});
+  const series = [line('RRNC, all sites that year', all, P.rrnc), line(`RRNC, same ${c.length} sites each year`, same, P.greenDD, {dash: 'dash', width: 2}), line('Virginia, all sites', va, P.grey)];
+  placeLabels(series);
+  const vals = series.flatMap(s => s.y);
+  plot('c-line', series, {yaxis: {title: 'Average points', range: [Math.min(...vals) - 7, Math.max(...vals) + 7]}, legend: {orientation: 'h', y: -0.3}, margin: {t: 20, r: 60, b: 90, l: 55}});
+
+  const lv = YRS.map(y => levelsFromBins(yr(y).bins));
+  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2))], [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => np(lv[k][i], yr(YRS[k]).n))]), ['<b>Sites</b>', ...YRS.map(y => `<b>${yr(y).n}</b>`)]]);
+
+  const R = ['2024-25', '2025-26'].map(y => SUMMARY.roster[y][key]), cell = (o, k) => o.n ? `${o.n} (avg ${o[k] == null ? '–' : r(o[k])})` : '0';
+  $('#t-roster').innerHTML = table(['', '24-25', '25-26'], [
+    ['Sites', ...R.map(x => x.n)],
+    ['Returning from the year before (avg score this year)', ...R.map(x => cell(x.cont, 'avg'))],
+    ['New this year (avg score this year)', ...R.map(x => cell(x.new, 'avg'))],
+    ['Left after the year before (avg score the year before)', ...R.map(x => cell(x.left, 'avgPrev'))]]);
 }
 init('time', draw, {filters: false, sites: true, summary: true});
 </script></body></html>

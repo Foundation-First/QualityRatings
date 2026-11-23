@@ -22,8 +22,8 @@ def pts(v):
 # Normalise each year's full file (all regions) to a common shape for the summary aggregates.
 years = {
     '2023-24': pd.DataFrame(dict(region=c['Ready Region Name'], type=c['Site Type'], rating=c['Quality Rating'], tp=c['Total Points'].map(pts), honor=None)),
-    '2024-25': pd.DataFrame(dict(region=b['RegionName'], type=b['SiteType'], rating=b['QualityRating'], tp=b['TotalPts'].map(pts), honor=b['Honor Roll'])),
-    '2025-26': pd.DataFrame(dict(region=a['RegionName'], type=a['SiteType'], rating=a['QualityRating'], tp=a['TotalPts'].map(pts), honor=a['Honor Roll'])),
+    '2024-25': pd.DataFrame(dict(region=b['RegionName'], type=b['SiteType'], rating=b['QualityRating'], tp=b['TotalPts'].map(pts), honor=b['Honor Roll'], prev=pd.to_numeric(b['Total Points: 2023-2024'], errors='coerce'))),
+    '2025-26': pd.DataFrame(dict(region=a['RegionName'], type=a['SiteType'], rating=a['QualityRating'], tp=a['TotalPts'].map(pts), honor=a['Honor Roll'], prev=pd.to_numeric(a['Total Points: 2024-2025'], errors='coerce'))),
 }
 
 def aggregate(df):
@@ -33,7 +33,8 @@ def aggregate(df):
                avg=round(float(df.tp.mean()), 1) if len(df) else None, byType={})
     for t in TYPES:
         d = df[df.type == t]
-        out['byType'][t] = dict(n=int(len(d)), avg=round(float(d.tp.mean()), 1) if len(d) else None)
+        cb = pd.cut(d.tp, [0, 399, 499, 599, 699, 800], labels=['399 or less', '400-499', '500-599', '600-699', '700-800'])
+        out['byType'][t] = dict(n=int(len(d)), avg=round(float(d.tp.mean()), 1) if len(d) else None, bins=[int((cb == bn).sum()) for bn in cb.cat.categories])
     return out
 
 def honor(df):
@@ -48,6 +49,23 @@ summary = dict(region='Ready Region 8 - North Central', years={}, statewide={}, 
 for y, df in years.items():
     summary['years'][y] = aggregate(df[df.region == REGION])
     summary['statewide'][y] = aggregate(df)
+def roster(prev_df, cur_df):
+    # Sites are followed with the earlier-year points VDOE lists beside each site (site ID numbers change between years).
+    # Sites that left are not in the later file, so their count and average come from the totals of the earlier year
+    # minus the continuing sites' earlier-year points.
+    out = {}
+    for key in ['all'] + TYPES:
+        pv = prev_df if key == 'all' else prev_df[prev_df.type == key]
+        cu = cur_df if key == 'all' else cur_df[cur_df.type == key]
+        cont, new = cu[cu.prev.notna()], cu[cu.prev.isna()]
+        left_n = max(0, len(pv) - len(cont))
+        left_avg = (pv.tp.sum() - cont.prev.sum()) / left_n if left_n else None
+        r1 = lambda v: None if v is None or pd.isna(v) else round(float(v), 1)
+        out[key] = dict(n=int(len(cu)), cont=dict(n=int(len(cont)), avg=r1(cont.tp.mean()), prevAvg=r1(cont.prev.mean())),
+                        new=dict(n=int(len(new)), avg=r1(new.tp.mean())), left=dict(n=int(left_n), avgPrev=r1(left_avg)))
+    return out
+def rr(y): return years[y][years[y].region == REGION]
+summary['roster'] = {'2024-25': roster(rr('2023-24'), rr('2024-25')), '2025-26': roster(rr('2024-25'), rr('2025-26'))}
 for y in ('2024-25', '2025-26'):
     summary['honor'][y] = honor(years[y][years[y].region == REGION])
     summary['honorStatewide'][y] = honor(years[y])
