@@ -158,11 +158,12 @@ RATINGS_SPEC.update({
     'layer': [
         {'mark': {'type': 'bar', 'height': 34, 'cornerRadius': 3},
          'encoding': {'x': {'field': 'start', 'type': 'quantitative', 'scale': {'domain': [0, 1]}, 'axis': None}, 'x2': {'field': 'cum'},
-                      'color': {'field': 'Level', 'type': 'nominal', 'sort': LEVELS, 'scale': {'domain': LEVELS, 'range': [GREEN, '#11689B', '#F7941D']},
+                      'color': {'field': 'Level', 'type': 'nominal', 'sort': LEVELS, 'scale': {'domain': LEVELS, 'range': ['#11689B', '#9CC3DB', '#F7941D']},
                                 'legend': {'orient': 'bottom', 'direction': 'vertical', 'title': None, 'labelFontSize': 12, 'symbolType': 'square'}}}},
         {'transform': [{'filter': 'datum.share >= 0.05'}],
-         'mark': {'type': 'text', 'fontSize': 13, 'fontWeight': 'bold', 'color': 'white'},
-         'encoding': {'x': {'field': 'mid', 'type': 'quantitative', 'scale': {'domain': [0, 1]}}, 'text': {'field': 'share', 'type': 'quantitative', 'format': '.0%'}}}]})
+         'mark': {'type': 'text', 'fontSize': 13, 'fontWeight': 'bold'},
+         'encoding': {'x': {'field': 'mid', 'type': 'quantitative', 'scale': {'domain': [0, 1]}}, 'text': {'field': 'share', 'type': 'quantitative', 'format': '.0%'},
+                      'color': {'condition': {'test': "datum.Level === 'Meets Expectations'", 'value': '#23323F'}, 'value': 'white'}}}]})
 
 # ---- layout: Letter portrait, 816 x 1056
 j, d = add(title_card, 0, 0, 816, 64); dump(j, d / 'visual.json')
@@ -171,7 +172,7 @@ for n, k in enumerate(kpis):
     j, d = add(k, 20 + n * 196, 122, 184, 78); dump(j, d / 'visual.json')
 
 W, X = 384, [20, 412]
-YS, H = [210, 464, 718], 244
+YS, H = [210, 444, 678], 226
 j, d = add(chart, X[0], YS[0], W, H)
 j['visual']['visualContainerObjects']['subTitle'] = [{'properties': {'show': L('false')}}]
 dump(j, d / 'visual.json')
@@ -181,17 +182,20 @@ deneb(X[1], YS[0], W, H, 'Quality ratings: share of sites', col('Rating Levels',
 deneb(X[0], YS[1], W, H, 'Average points by program type', col('Sites-Orgs', 'cr720_providertypename'),
       [mea('Average points'), mea('RRNC average points'), mea('Virginia average points')],
       grouped_bars(['Average points', 'RRNC average points', 'Virginia average points'], 'cr720_providertypename', 'd'))
-deneb(X[1], YS[1], W, H, 'Average points: interaction and total', col('Detail', 'Item'),
+deneb(X[1], YS[1], W, H, 'Honor Roll: share of sites', col('Detail', 'Item'),
+      [mea('Group detail share'), mea('RRNC detail share'), mea('Virginia detail share')],
+      grouped_bars(['Group detail share', 'RRNC detail share', 'Virginia detail share'], 'Item', '.0%', ['Excellence', 'Improvement', 'Infant/Toddler']), ('Section', ['Honor Roll']))
+deneb(X[0], YS[2], W, H, 'Average points: interaction and total', col('Detail', 'Item'),
       [mea('Group detail points'), mea('RRNC detail points'), mea('Virginia detail points')],
       grouped_bars(['Group detail points', 'RRNC detail points', 'Virginia detail points'], 'Item', 'd', ['Interaction points', 'Total points']), ('Item', ['Interaction points', 'Total points']))
-deneb(X[0], YS[2], W, H, 'Honor Roll and approved curriculum: share of sites', col('Detail', 'Item'),
-      [mea('Group detail share'), mea('RRNC detail share'), mea('Virginia detail share')],
-      grouped_bars(['Group detail share', 'RRNC detail share', 'Virginia detail share'], 'Item', '.0%', ['Excellence', 'Improvement', 'Infant/Toddler', 'VDOE-approved curriculum']), ('Item', ['Excellence', 'Improvement', 'Infant/Toddler', 'Curriculum points']))
 deneb(X[1], YS[2], W, H, 'Years in VQB5: share of sites', col('Detail', 'Item'),
       [mea('Group detail share'), mea('RRNC detail share')],
       grouped_bars(['Group detail share', 'RRNC detail share'], 'Item', '.0%', ['First year', 'Second year', 'Third year or more'], WHO[:2]), ('Section', ['Years in VQB5']))
+deneb(20, 912, 776, 100, 'Sites using a VDOE-approved curriculum', col('Detail', 'Item'),
+      [mea('Group detail share'), mea('RRNC detail share'), mea('Virginia detail share')],
+      grouped_bars(['Group detail share', 'RRNC detail share', 'Virginia detail share'], 'Item', '.0%'), ('Item', ['Curriculum points']))
 
-j, d = add(footer, 20, 972, 776, 56)
+j, d = add(footer, 20, 1016, 776, 36)
 j['visual']['objects']['general'][0]['properties']['paragraphs'] = [{'textRuns': [{'value': 'Internal use. Approval is needed before sharing outside Foundation First / RRNC. Source: VDOE VQB5 Quality Rating Data (public); Virginia figures from VDOE statewide files. Scores run from 100 to 800. No Provider 360 or other internal data is included.', 'textStyle': {'fontSize': '10pt', 'color': '#4f5f6b'}}]}]
 dump(j, d / 'visual.json')
 print('Dashboard built:', P3.name, '-', len(list((P3 / 'visuals').glob('*'))), 'visuals')
