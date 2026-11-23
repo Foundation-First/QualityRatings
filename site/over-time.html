@@ -8,8 +8,8 @@
 <div class="answer" id="answer"></div>
 <div class="card"><div id="c-line" class="chart"></div></div>
 <div class="grid" style="margin-top:26px">
- <div class="card"><h3>Average score by years in VQB5</h3><div class="tbl wrap1" id="t-tenure"></div></div>
- <div class="card"><h3>Ratings each year</h3><div class="tbl" id="t-levels"></div></div>
+ <div class="card"><h3>Average score by year in VQB5</h3><div class="tbl wrap1" id="t-tenure"></div></div>
+ <div class="card"><h3>Quality Ratings each year</h3><div class="tbl" id="t-levels"></div></div>
 </div>
 </main>
 <script src="common.js"></script>
@@ -40,21 +40,21 @@ function draw() {
   const subject = type ? TLABEL[type] : 'RRNC sites', who = {'': 'sites', Center: 'centers', 'Public School': 'public-school sites', 'Family Day Home': 'home-based programs'}[type];
   const T = SUMMARY.tenure[key];
   $('#answer').innerHTML = `${subject} averaged ${r(all[0])} points in 2023-24, ${r(all[1])} in 2024-25 and ${r(all[2])} in 2025-26. ` +
-    (c.length ? `The ${c.length} ${who} that have participated since 2023-24 averaged ${r(same[0])}, ${r(same[1])} and ${r(same[2])}. ` : '') +
-    (T.second.n ? `Sites that joined in 2024-25 averaged ${r(T.second.avgFirstYear)} in their first year and ${r(T.second.avg)} in their second (${T.second.n} ${T.second.n === 1 ? 'site' : 'sites'}).` : '');
+    (c.length ? `The ${c.length} ${who} that have participated since VQB5's first year, 2023-24, averaged ${r(same[0])}, ${r(same[1])} and ${r(same[2])}. ` : '') +
+    (T.second.n ? `Sites that started participating in VQB5 in 2024-25 (${T.second.n} ${T.second.n === 1 ? 'site' : 'sites'}) averaged ${r(T.second.avgFirstYear)} in their first year and ${r(T.second.avg)} in their second.` : '');
 
   // labelled points: RRNC green, Virginia grey
   const line = (name, y, color, dash) => ({name, type: 'scatter', mode: 'lines+markers+text', x: YRS, y, text: y.map(v => `<b>${r(v)}</b>`), textfont: {size: 16, color: P.ink},
     line: {color, width: 4, dash}, marker: {size: 10, color}, hovertemplate: `%{x}: %{y:.0f}<extra>${name}</extra>`});
-  const series = [line('RRNC, all sites that year', all, P.rrnc), line(`RRNC, participating since 2023-24 (${c.length} sites)`, same, P.greenDD, 'dot'), line('Virginia, all sites', va, P.grey, 'dash')];
+  const series = [line('RRNC, all sites', all, P.rrnc), line(`RRNC, participating since 2023-24 (${c.length} sites)`, same, P.greenDD, 'dot'), line('Virginia, all sites', va, P.grey, 'dash')];
   placeLabels(series);
   const vals = series.flatMap(s => s.y);
-  plot('c-line', series, {yaxis: {title: {text: 'Avg. Total VQB5 Score'}, range: [Math.min(...vals) - 8, Math.max(...vals) + 8]}, legend: {orientation: 'h', y: -0.22}, margin: {t: 20, r: 40, b: 100, l: 70}, xaxis: {}});
+  plot('c-line', series, {yaxis: {title: {text: 'Avg. Total Points'}, range: [Math.min(...vals) - 8, Math.max(...vals) + 8]}, legend: {orientation: 'h', y: -0.22}, margin: {t: 20, r: 40, b: 100, l: 70}, xaxis: {}});
 
   const lv = YRS.map(y => levelsFromBins(yr(y).bins));
-  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2))], [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => np(lv[k][i], yr(YRS[k]).n))]), ['Sites', ...YRS.map(y => yr(y).n)]]);
+  $('#t-levels').innerHTML = table(['Quality rating', ...YRS.map(y => y.slice(2))], [...DESC.map(i => [LEVELS[i].name, ...YRS.map((_, k) => np(lv[k][i], yr(YRS[k]).n))]), ['# Sites', ...YRS.map(y => yr(y).n)]]);
 
-  const rows = [['First year (new in 2025-26)', T.first], ['Second year (joined in 2024-25)', T.second], ['Third year (participating since 2023-24)', T.third]].filter(x => x[1].n);
+  const rows = [['First year (new in 2025-26)', T.first], ['Second year (started participating in 2024-25)', T.second], ['Third year (participating since 2023-24)', T.third]].filter(x => x[1].n);
   $('#t-tenure').innerHTML = table(['Years in VQB5', 'Sites', {t: 'Average score, 2025-26', cls: 'hl'}], rows.map(([l, d]) => [l, d.n, r(d.avg)]), 1);
 }
 init('time', draw, {filters: false, summary: true});

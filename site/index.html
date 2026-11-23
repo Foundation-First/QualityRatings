@@ -9,21 +9,21 @@
 </div></div>
 <main class="wrap">
 <div class="kpis" id="stats"></div>
-<section><h2>The short version</h2>
+<section><h2>Overview</h2>
 <ul class="tldr" id="tldr"></ul></section>
 
 <section><h2>What would you like to know?</h2>
 <div class="qgrid">
- <a class="qcard" href="over-time.html">Is quality improving?</a>
+ <a class="qcard" href="over-time.html">How is quality improving over time?</a>
  <a class="qcard" href="types.html">How do centers, schools and home-based programs compare?</a>
  <a class="qcard" href="class.html">What does classroom quality look like?</a>
- <a class="qcard" href="types.html#honor">Who is on the Honor Roll?</a>
+ <a class="qcard" href="types.html#honor">Which sites have received Honor Roll recognition?</a>
  <a class="qcard" href="five-level.html">What is changing with the five-level ratings?</a>
 </div>
 </section>
 
 <section id="request"><h2>Need more specific data?</h2>
-<div class="answer" style="font-size:20px">This site shows Ready Region North Central compared with Virginia. Reports for a particular locality, school district or program are prepared on request, so they can be shared with the right context. <span id="reqline"></span></div>
+<div class="answer" style="font-size:20px">This site shows Ready Region North Central's VQB5 Quality Ratings compared with Virginia. Reports for a specific locality, school district, or program are prepared upon request; <span id="reqline"></span></div>
 </section>
 </main>
 <script src="common.js"></script>
@@ -31,7 +31,7 @@
 const YRS = ['2023-24', '2024-25', '2025-26'];
 const REQUEST_EMAIL = '';   // set to the address people should write to
 function draw() {
-  $('#reqline').innerHTML = REQUEST_EMAIL ? `Email <a href="mailto:${REQUEST_EMAIL}?subject=VQB5%20report%20request">${REQUEST_EMAIL}</a> to ask for one.` : 'Please contact Foundation First to ask for one.';
+  $('#reqline').innerHTML = REQUEST_EMAIL ? `Email <a href="mailto:${REQUEST_EMAIL}?subject=VQB5%20report%20request">${REQUEST_EMAIL}</a> to ask for one.` : 'please contact Foundation First for more information.';
   const S = SUMMARY, cur = S.years['2025-26'], st = S.statewide['2025-26'], n = cur.n, curL = levelsFromBins(cur.bins), last = LEVELS.length - 1;
   const diff = Math.round(cur.avg - st.avg), honorTotal = S.honor['2025-26']._unique, r = Math.round;
   if (scaleKey === 'three') {
@@ -42,10 +42,10 @@ function draw() {
     $('#callout').innerHTML = `${pc(top2, n)} of RRNC sites scored 600 or higher in the 2025-26 program year. The Ready Region North Central (RRNC) average was <b>${r(cur.avg)} points</b>, ${diff} above the statewide average of ${r(st.avg)}. The largest group (${curL[big]} sites) is at the ${LEVELS[big].name} level.`;
   }
   $('#stats').innerHTML = kpis([
-    [fmt(n), 'Sites rated in 2025-26'],
-    [r(cur.avg), `Average total points (state ${r(st.avg)})`],
+    [fmt(n), 'VQB5-participating sites rated 2025-26'],
+    [r(cur.avg), `Average total points (statewide: ${r(st.avg)})`],
     ...DESC.map(i => [fmt(curL[i]), LEVELS[i].name, LEVELS[i].color]),
-    [fmt(honorTotal), 'Sites on an Honor Roll'],
+    [fmt(honorTotal), 'Sites receiving an Honor Roll'],
   ]);
 
   // the short version: only statements the numbers support, each stated as a plain fact
@@ -53,8 +53,8 @@ function draw() {
   const items = [];
   if (rr.every((v, i) => v > va[i])) items.push(`RRNC sites averaged above Virginia in each of the last three years: ${r(rr[0])} vs. ${r(va[0])}, ${r(rr[1])} vs. ${r(va[1])} and ${r(rr[2])} vs. ${r(va[2])}.`);
   items.push(`Participation grew from ${S.years['2023-24'].n} sites in 2023-24 to ${S.years['2025-26'].n} in 2025-26.`);
-  items.push(`Sites that joined in 2024-25 averaged ${r(T.second.avgFirstYear)} points in their first year and ${r(T.second.avg)} in their second (${T.second.n} sites).`);
-  if (scaleKey === 'three' && nl[0] === 0) items.push(`All ${S.newSites.n} sites that were new in 2025-26 met or exceeded expectations.`);
+  items.push(`Sites that started participating in VQB5 in 2024-25 averaged ${r(T.second.avgFirstYear)} points in their first year and ${r(T.second.avg)} in their second (${T.second.n} sites).`);
+  if (scaleKey === 'three' && nl[0] === 0) items.push(`All ${S.newSites.n} sites that were new to VQB5 in 2025-26 met or exceeded expectations.`);
   $('#tldr').innerHTML = items.map(t => `<li>${t}</li>`).join('');
 }
 init('summary', draw, {filters: false, summary: true});

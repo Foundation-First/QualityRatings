@@ -7,7 +7,7 @@
 <div class="answer" id="answer"></div>
 <div class="grid">
  <div class="card"><h3>Average score by program type</h3><div id="c-avg" class="chart short"></div></div>
- <div class="card"><h3>Ratings by program type</h3><div class="tbl" id="t-levels"></div></div>
+ <div class="card"><h3>Quality Ratings by program type</h3><div class="tbl" id="t-levels"></div></div>
 </div>
 <section id="honor" style="margin-top:40px"><h2>Who is on the Honor Roll?</h2>
 <div class="answer" id="answer2"></div>
@@ -19,15 +19,15 @@ const ORDER = ['Center', 'Family Day Home', 'Public School'];   // display order
 function draw() {
   const S = SUMMARY, cur = S.years['2025-26'], st = S.statewide['2025-26'], n = cur.n, r = Math.round;
   const byAvg = [...TYPES].sort((a, b) => cur.byType[b].avg - cur.byType[a].avg);
-  $('#answer').innerHTML = `Average score: ` + byAvg.map((t, i) => `${i ? TLABEL[t].toLowerCase() : TLABEL[t]} ${r(cur.byType[t].avg)}`).join(', ') + ` points.`;
+  $('#answer').innerHTML = `Average score: ` + byAvg.map((t, i) => `${i ? TLABEL[t].toLowerCase() : TLABEL[t]} ${r(cur.byType[t].avg)}`).join(', ') + `.`;
 
   // dumbbell: RRNC (green) and Virginia (grey) for each type, numbers outside the circles
   const rows = [...byAvg].reverse();
   const conn = rows.map(t => ({type: 'scatter', mode: 'lines', x: [cur.byType[t].avg, st.byType[t].avg], y: [TLABEL[t], TLABEL[t]], line: {color: P.grey, width: 2, dash: 'dot'}, hoverinfo: 'skip', showlegend: false}));
   const dots = (name, color, get, pos) => ({name, type: 'scatter', mode: 'markers+text', x: rows.map(t => get(t)), y: rows.map(t => TLABEL[t]), text: rows.map(t => `<b>${r(get(t))}</b>`), textposition: pos,
     textfont: {color: P.ink, size: 16}, marker: {size: 26, color, line: {width: 2, color: '#fff'}}, hovertemplate: `%{y}: %{x:.0f}<extra>${name}</extra>`});
-  plot('c-avg', [...conn, dots('RRNC', P.rrnc, t => cur.byType[t].avg, 'top center'), dots('Virginia', P.grey, t => st.byType[t].avg, 'bottom center')],
-    {xaxis: {title: {text: 'Avg. Total VQB5 Score'}, range: [545, 655], showgrid: false}, yaxis: {automargin: true, range: [-0.6, rows.length - 0.4], tickfont: {size: 16}},
+  plot('c-avg', [...conn, dots('Virginia', P.grey, t => st.byType[t].avg, 'bottom center'), dots('RRNC', P.rrnc, t => cur.byType[t].avg, 'top center')],
+    {xaxis: {title: {text: 'Avg. Total Points'}, range: [545, 655], showgrid: false}, yaxis: {automargin: true, range: [-0.6, rows.length - 0.4], tickfont: {size: 16}},
      legend: {orientation: 'h', y: 1.12}, margin: {t: 50, r: 30, b: 70, l: 190}});
 
   const B = S.bins.byType, tl = Object.fromEntries(TYPES.map(t => [t, levelsFromBins(B[t])]));
