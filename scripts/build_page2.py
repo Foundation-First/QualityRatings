@@ -77,24 +77,32 @@ for n, s in enumerate(slicers):
     save(j, d)
 
 
-def detail_table(y, h, label, text):
+def section_filter(section):
+    ent = {'Name': 'd', 'Entity': 'Detail', 'Type': 0}
+    fld = {'Column': {'Expression': {'SourceRef': {'Entity': 'Detail'}}, 'Property': 'Section'}}
+    cond = {'Column': {'Expression': {'SourceRef': {'Source': 'd'}}, 'Property': 'Section'}}
+    return {'filters': [{'name': uuid.uuid4().hex[:20], 'field': fld, 'type': 'Categorical', 'filter': {'Version': 2, 'From': [ent], 'Where': [{'Condition': {'In': {'Expressions': [cond], 'Values': [[{'Literal': {'Value': "'" + section + "'"}}]]}}}]}, 'howCreated': 'User'}]}
+
+
+def detail_table(y, h, label, text, section):
     j, d = add(table, 20, y, 776, h)
+    j['filterConfig'] = section_filter(section)
     j['visual']['query'] = {'queryState': {'Values': {'projections': [col('Detail', 'Item', label), mea('Detail group', 'This group'), mea('Detail RRNC', 'RRNC'), mea('Detail Virginia', 'Virginia')]}}}
     titled(j, text)
     save(j, d)
 
 
-detail_table(160, 172, 'Points (average)', 'Points breakdown, latest program year')
-detail_table(344, 172, 'Honor Roll', 'Honor Roll: sites (share)')
+detail_table(160, 150, 'Points (average)', 'Points breakdown, latest program year', 'Points')
+detail_table(322, 150, 'Honor Roll', 'Honor Roll: sites (share)', 'Honor Roll')
 
 # by program type
-j, d = add(table, 20, 528, 776, 176)
+j, d = add(table, 20, 484, 776, 214)
 j['visual']['query'] = {'queryState': {'Values': {'projections': [col('Sites-Orgs', 'cr720_providertypename', 'Program type'), mea('Sites rated', 'Sites'), mea('Average points', 'This group, average points'), mea('RRNC average points', 'RRNC'), mea('Virginia average points', 'Virginia')]}}}
 titled(j, 'By program type, latest program year')
 save(j, d)
 
-detail_table(716, 172, 'Years in VQB5', 'Years in VQB5: sites and average points')
+detail_table(710, 150, 'Years in VQB5', 'Years in VQB5: sites and average points', 'Years in VQB5')
 
-j, d = add(footer, 20, 902, 776, 40)
+j, d = add(footer, 20, 872, 776, 40)
 save(j, d)
 print('Page 2 built:', P2.name, '-', len(list((P2 / 'visuals').glob('*'))), 'visuals')

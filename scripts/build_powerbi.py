@@ -71,7 +71,16 @@ if not KEEP_TABLES:
 # ---------------------------------------------------------------- measures
 PS, SO, PY = "'Published Scores'", "'Sites-Orgs'", "'Program Year'"
 
-def detail_measure(rrnc):
+TAIL = {'text': """SWITCH(sec,
+    "Points", FORMAT(pv, "0"),
+    "Honor Roll", hn & " (" & FORMAT(DIVIDE(hn, tot, 0), "0%") & ")",
+    "Years in VQB5", COALESCE(tn, 0) & IF(COALESCE(tn, 0) = 1, " site", " sites") & IF(COALESCE(tn, 0) > 0, ", average " & FORMAT(tavg, "0"), ""),
+    BLANK())""",
+        'points': 'IF(sec = "Points", pv, BLANK())',
+        'share': 'SWITCH(sec, "Honor Roll", DIVIDE(hn, tot, 0), "Years in VQB5", DIVIDE(COALESCE(tn, 0), tot, 0), BLANK())'}
+
+
+def detail_measure(rrnc, mode='text'):
     """Text for one column of the page-2 tables (points, Honor Roll, years in VQB5), for the group or for all of RRNC."""
     R = f"REMOVEFILTERS({PS}[cr720_county], {PS}[cr720_sitename]), " if rrnc else ""
     sites = f"CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), {R}{PY}[cr720_name] = ly)"
@@ -96,11 +105,7 @@ VAR secondSet = EXCEPT(INTERSECT(cur, prev1), prev2)
 VAR thirdSet = INTERSECT(INTERSECT(cur, prev1), prev2)
 VAR tn = SWITCH(it, "First year", COUNTROWS(firstSet), "Second year", COUNTROWS(secondSet), "Third year or more", COUNTROWS(thirdSet))
 VAR tavg = SWITCH(it, "First year", {avg('cr720_totalpoints', ', ' + ta('firstSet'))}, "Second year", {avg('cr720_totalpoints', ', ' + ta('secondSet'))}, "Third year or more", {avg('cr720_totalpoints', ', ' + ta('thirdSet'))})
-RETURN SWITCH(sec,
-    "Points", FORMAT(pv, "0"),
-    "Honor Roll", hn & " (" & FORMAT(DIVIDE(hn, tot, 0), "0%") & ")",
-    "Years in VQB5", COALESCE(tn, 0) & IF(COALESCE(tn, 0) = 1, " site", " sites") & IF(COALESCE(tn, 0) > 0, ", average " & FORMAT(tavg, "0"), ""),
-    BLANK())"""
+RETURN {TAIL[mode]}"""
 
 MEAS = [
  ('Latest Year', None, f"""MAXX(FILTER(ALL({PY}), CALCULATE(COUNTROWS({PS}), REMOVEFILTERS({PS}[cr720_county], {PS}[cr720_sitename])) > 0), {PY}[cr720_name])"""),
@@ -152,6 +157,35 @@ VAR yr = MAX(Virginia[StartYear])
 VAR vs = CALCULATE(MAX(Virginia[Sites]), Virginia[StartYear] = yr, Virginia[Type] = vt)
 VAR v = SWITCH(vt, "Center", MAX(Detail[VA_Center]), "Public School", MAX(Detail[VA_PublicSchool]), "Family Day Home", MAX(Detail[VA_FamilyDayHome]), MAX(Detail[VA_All]))
 RETURN SWITCH(sec, "Points", FORMAT(v, "0"), "Honor Roll", v & " (" & FORMAT(DIVIDE(v, vs, 0), "0%") & ")", BLANK())"""),
+ ('Group detail points', '0', detail_measure(False, 'points')),
+ ('RRNC detail points', '0', detail_measure(True, 'points')),
+ ('Group detail share', '0%', detail_measure(False, 'share')),
+ ('RRNC detail share', '0%', detail_measure(True, 'share')),
+ ('Virginia detail points', '0', """VAR sec = SELECTEDVALUE(Detail[Section])
+VAR vt = [Virginia type]
+RETURN IF(sec = "Points", SWITCH(vt, "Center", MAX(Detail[VA_Center]), "Public School", MAX(Detail[VA_PublicSchool]), "Family Day Home", MAX(Detail[VA_FamilyDayHome]), MAX(Detail[VA_All])))"""),
+ ('Virginia detail share', '0%', """VAR sec = SELECTEDVALUE(Detail[Section])
+VAR vt = [Virginia type]
+VAR yr = MAX(Virginia[StartYear])
+VAR vs = CALCULATE(MAX(Virginia[Sites]), Virginia[StartYear] = yr, Virginia[Type] = vt)
+VAR v = SWITCH(vt, "Center", MAX(Detail[VA_Center]), "Public School", MAX(Detail[VA_PublicSchool]), "Family Day Home", MAX(Detail[VA_FamilyDayHome]), MAX(Detail[VA_All]))
+RETURN IF(sec = "Honor Roll", DIVIDE(v, vs, 0))"""),
+ ('Group level share', '0%', f"""VAR lvl = SELECTEDVALUE('Rating Levels'[Level])
+VAR ly = [Latest Year]
+RETURN DIVIDE(COALESCE(CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), {PY}[cr720_name] = ly, {PS}[cr720_qualityrating] = lvl), 0), [Sites rated], 0)"""),
+ ('RRNC level share', '0%', f"""VAR lvl = SELECTEDVALUE('Rating Levels'[Level])
+VAR ly = [Latest Year]
+VAR tot = CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), REMOVEFILTERS({PS}[cr720_county], {PS}[cr720_sitename]), {PY}[cr720_name] = ly)
+RETURN DIVIDE(COALESCE(CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), REMOVEFILTERS({PS}[cr720_county], {PS}[cr720_sitename]), {PY}[cr720_name] = ly, {PS}[cr720_qualityrating] = lvl), 0), tot, 0)"""),
+ ('Virginia level share', '0%', """VAR lvl = SELECTEDVALUE('Rating Levels'[Level])
+VAR yr = MAX(Virginia[StartYear])
+VAR vt = [Virginia type]
+VAR tot = CALCULATE(MAX(Virginia[Sites]), Virginia[StartYear] = yr, Virginia[Type] = vt)
+VAR n = SWITCH(lvl,
+    "Needs Support", CALCULATE(MAX(Virginia[Needs]), Virginia[StartYear] = yr, Virginia[Type] = vt),
+    "Meets Expectations", CALCULATE(MAX(Virginia[Meets]), Virginia[StartYear] = yr, Virginia[Type] = vt),
+    "Exceeds Expectations", CALCULATE(MAX(Virginia[Exceeds]), Virginia[StartYear] = yr, Virginia[Type] = vt))
+RETURN DIVIDE(n, tot, 0)"""),
  ('Report title', None, f"""IF(ISFILTERED({PS}[cr720_sitename]), SELECTEDVALUE({PS}[cr720_sitename], "Selected sites"),
     IF(ISFILTERED({PS}[cr720_county]), SELECTEDVALUE({PS}[cr720_county], "Selected localities"), "Ready Region North Central"))
     & IF(SELECTEDVALUE({SO}[cr720_providertypename]) <> BLANK(), " - " & SELECTEDVALUE({SO}[cr720_providertypename]), "")"""),
