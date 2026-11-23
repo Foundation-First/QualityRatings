@@ -37,7 +37,21 @@ def col(ent, prop): return {'field': {'Column': {'Expression': {'SourceRef': {'E
 def mea(prop, ent=PS): return {'field': {'Measure': {'Expression': {'SourceRef': {'Entity': ent}}, 'Property': prop}}, 'queryRef': ent + '.' + prop, 'nativeQueryRef': prop}
 
 
+def named(pr, name):
+    pr['displayName'] = name
+    return pr
+
+
+def titled(j, text):
+    L = lambda v: {'expr': {'Literal': {'Value': v}}}
+    j['visual'].setdefault('visualContainerObjects', {})['title'] = [{'properties': {'show': L('true'), 'text': L("'" + text + "'")}}]
+
+
 def place(j, x, y, w, h, z=None):
+    return _place(j, x, y, w, h, z)
+
+
+def _place(j, x, y, w, h, z=None):
     p = j['position']
     p.update(x=x, y=y, width=w, height=h)
     if z is not None: p.update(z=z, tabOrder=z)
@@ -74,16 +88,19 @@ for n, (prop, label) in enumerate([('Sites rated', 'Sites rated'), ('Average poi
 
 # --- ratings table
 _, t = pick('tableEx')[0]
-t['visual']['query'] = {'queryState': {'Values': {'projections': [col(RL, 'Level'), mea('Group rating level'), mea('RRNC rating level'), mea('Virginia rating level')]}}}
+t['visual']['query'] = {'queryState': {'Values': {'projections': [named(col(RL, 'Level'), 'Quality rating'), named(mea('Group rating level'), 'This group'), named(mea('RRNC rating level'), 'RRNC'), named(mea('Virginia rating level'), 'Virginia')]}}}
+titled(t, 'Ratings in the latest program year: sites (share)')
 place(t, 20, 286, 776, 140, 9)
 # --- line chart
 _, l = pick('lineChart')[0]
 l['visual']['query'] = {'queryState': {'Category': {'projections': [col(PY, 'cr720_name')]},
-                                       'Y': {'projections': [mea('Group average by year'), mea('RRNC average by year'), mea('Virginia average by year')]}}}
+                                       'Y': {'projections': [named(mea('Group average by year'), 'This group'), named(mea('RRNC average by year'), 'RRNC'), named(mea('Virginia average by year'), 'Virginia')]}}}
+titled(l, 'Average total points by program year')
 place(l, 20, 436, 776, 262, 10)
 # --- site matrix
 _, m = pick('pivotTable')[0]
-m['visual']['query'] = {'queryState': {'Rows': {'projections': [col(PS, 'cr720_sitename')]}, 'Columns': {'projections': [col(PY, 'cr720_name')]}, 'Values': {'projections': [mea('Total points')]}}}
+m['visual']['query'] = {'queryState': {'Rows': {'projections': [named(col(PS, 'cr720_sitename'), 'Site')]}, 'Columns': {'projections': [named(col(PY, 'cr720_name'), 'Program year')]}, 'Values': {'projections': [named(mea('Total points'), 'Total points')]}}}
+titled(m, 'Total points by site and program year')
 place(m, 20, 710, 776, 296, 11)
 # --- footer
 _, tb = pick('textbox')[0]
