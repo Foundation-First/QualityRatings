@@ -4,7 +4,7 @@ Run with Power BI Desktop closed:  python scripts/build_dashboard.py internal/po
 Needs page 1 (the one-pager) and the numeric measures (build_powerbi.py --measures-only).
 Re-running rebuilds the page from scratch; any older pages after page 1 are removed.
 """
-import copy, json, shutil, sys, uuid
+import copy, json, os, shutil, sys, uuid
 from pathlib import Path
 
 PROJECT = Path(sys.argv[1] if len(sys.argv) > 1 else 'internal/powerbi-work')
@@ -15,12 +15,16 @@ dump = lambda j, p: p.write_text(json.dumps(j, indent=2), encoding='utf-8')
 order = load(pages_json)
 P1 = RP / 'pages' / order['pageOrder'][0]
 
+TEMPLATE = PROJECT / 'deneb-template.json'      # a Deneb visual Desktop wrote (add one on the Dashboard page, then run this)
+for f in RP.glob('pages/*/visuals/*/visual.json'):
+    if 'deneb' in f.read_text(encoding='utf-8-sig')[:2000].lower() and '"visualType": "deneb' in f.read_text(encoding='utf-8-sig'):
+        shutil.copy(f, TEMPLATE)
 for old in order['pageOrder'][2:]:
     shutil.rmtree(RP / 'pages' / old, ignore_errors=True)
 order['pageOrder'] = order['pageOrder'][:2]
 if len(order['pageOrder']) > 1:
     P3 = RP / 'pages' / order['pageOrder'][1]
-    shutil.rmtree(P3 / 'visuals', ignore_errors=True)
+    shutil.rmtree(P3 / 'visuals', onerror=lambda f, p_, e: (os.chmod(p_, 0o777), f(p_)))
 else:
     pid = uuid.uuid4().hex[:20]
     P3 = RP / 'pages' / pid
@@ -31,7 +35,7 @@ dump(order, pages_json)
 pg = load(P1 / 'page.json')
 pg.update(name=P3.name, displayName='Dashboard', width=1280, height=720)
 dump(pg, P3 / 'page.json')
-(P3 / 'visuals').mkdir()
+(P3 / 'visuals').mkdir(exist_ok=True)
 
 src = {}
 for f in (P1 / 'visuals').glob('*/visual.json'):
@@ -93,6 +97,39 @@ def make_chart(kind, x, y, w, h, title, category, series, section=None):
     dump(j, d / 'visual.json')
 
 
+def deneb(x, y, w, h, title, category, series, spec):
+    j, d = add(json.load(open(TEMPLATE, encoding='utf-8')), x, y, w, h)
+    j['visual']['query'] = {'queryState': {'dataset': {'projections': [category] + series}}}
+    j.pop('filterConfig', None)
+    lit = lambda t: L("'" + t.replace("'", "''") + "'")
+    j['visual']['objects'] = {'vega': [{'properties': {'provider': lit('vegaLite'), 'renderMode': lit('svg'), 'jsonSpec': lit(json.dumps(spec)), 'jsonConfig': lit('{}'), 'isNewDialogOpen': L('false')}}]}
+    j['visual']['visualContainerObjects'] = {'title': [{'properties': {'show': L('true'), 'text': L("'" + title + "'")}}]}
+    dump(j, d / 'visual.json')
+
+
+LEVELS = ['Exceeds Expectations', 'Meets Expectations', 'Needs Support']
+RATINGS_SPEC = {
+    '$schema': 'https://vega.github.io/schema/vega-lite/v5.json',
+    'data': {'name': 'dataset'},
+    'autosize': {'type': 'fit', 'contains': 'padding'},
+    'config': {'view': {'stroke': None}, 'font': 'Segoe UI'},
+    'transform': [
+        {'fold': ['Group level share', 'RRNC level share', 'Virginia level share'], 'as': ['key', 'share']},
+        {'calculate': "datum.key === 'Group level share' ? 'This group' : datum.key === 'RRNC level share' ? 'RRNC' : 'Virginia'", 'as': 'Who'},
+        {'calculate': 'indexof(' + json.dumps(LEVELS) + ', datum.Level)', 'as': 'ord'},
+        {'window': [{'op': 'sum', 'field': 'share', 'as': 'cum'}], 'groupby': ['Who'], 'sort': [{'field': 'ord'}], 'frame': [None, 0]},
+        {'calculate': 'datum.cum - datum.share', 'as': 'start'},
+        {'calculate': 'datum.cum - datum.share / 2', 'as': 'mid'}],
+    'encoding': {'y': {'field': 'Who', 'type': 'nominal', 'sort': ['This group', 'RRNC', 'Virginia'], 'axis': {'title': None, 'labelFontSize': 13, 'labelColor': '#23323F', 'ticks': False, 'domain': False}}},
+    'layer': [
+        {'mark': {'type': 'bar', 'height': 38, 'cornerRadius': 3},
+         'encoding': {'x': {'field': 'start', 'type': 'quantitative', 'scale': {'domain': [0, 1]}, 'axis': None}, 'x2': {'field': 'cum'},
+                      'color': {'field': 'Level', 'type': 'nominal', 'sort': LEVELS, 'scale': {'domain': LEVELS, 'range': ['#6FA82B', '#11689B', '#F7941D']},
+                                'legend': {'orient': 'bottom', 'title': None, 'labelFontSize': 12, 'symbolType': 'square'}}}},
+        {'transform': [{'filter': 'datum.share >= 0.05'}],
+         'mark': {'type': 'text', 'fontSize': 13, 'fontWeight': 'bold', 'color': 'white'},
+         'encoding': {'x': {'field': 'mid', 'type': 'quantitative', 'scale': {'domain': [0, 1]}}, 'text': {'field': 'share', 'type': 'quantitative', 'format': '.0%'}}}]}
+
 # title band, dropdowns, as-of line
 j, d = add(title_card, 0, 0, 1280, 64); dump(j, d / 'visual.json')
 for n, s_ in enumerate(slicers):
@@ -111,9 +148,8 @@ Y1, Y2, H = 210, 456, 238
 j, d = add(chart, X[0], Y1, W, H)
 j['visual']['visualContainerObjects']['subTitle'] = [{'properties': {'show': L('false')}}]
 dump(j, d / 'visual.json')     # average points by program year (copied from page 1)
-make_chart('clusteredColumnChart', X[1], Y1, W, H, 'Quality ratings: share of sites',
-           col('Rating Levels', 'Level', 'Quality rating'),
-           [mea('Group level share', G), mea('RRNC level share', R), mea('Virginia level share', V)])
+deneb(X[1], Y1, W, H, 'Quality ratings: share of sites', col('Rating Levels', 'Level', 'Level'),
+      [mea('Group level share', 'Group level share'), mea('RRNC level share', 'RRNC level share'), mea('Virginia level share', 'Virginia level share')], RATINGS_SPEC)
 make_chart('clusteredColumnChart', X[2], Y1, W, H, 'Average points by program type',
            col('Sites-Orgs', 'cr720_providertypename', 'Program type'),
            [mea('Average points', G), mea('RRNC average points', R), mea('Virginia average points', V)])
