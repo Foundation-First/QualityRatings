@@ -84,6 +84,7 @@ def make_chart(kind, x, y, w, h, title, category, series, section=None):
     v['visualType'] = kind
     v['query'] = {'queryState': {'Category': {'projections': [category]}, 'Y': {'projections': series}}}
     v['visualContainerObjects']['title'][0]['properties']['text'] = L("'" + title + "'")
+    v['visualContainerObjects']['subTitle'] = [{'properties': {'show': L('false')}}]
     v['objects'] = {'labels': [{'properties': {'show': L('true'), 'fontSize': L('12D'), 'labelPosition': L("'OutsideEnd'")}}],
                     'valueAxis': [{'properties': {'show': L('false')}}],
                     'legend': [{'properties': {'show': L('true'), 'position': L("'Bottom'"), 'fontSize': L('12D')}}]}
@@ -99,15 +100,17 @@ for n, s_ in enumerate(slicers):
     j['filterConfig'] = copy.deepcopy(s_.get('filterConfig', {}))
     if not j['filterConfig']: j.pop('filterConfig')
     dump(j, d / 'visual.json')
-j, d = add(asof_card, 812, 78, 452, 36); dump(j, d / 'visual.json')
+j, d = add(asof_card, 812, 72, 452, 48); dump(j, d / 'visual.json')
 # four number cards
 for n, k in enumerate(kpis):
-    j, d = add(k, 16 + n * 316, 128, 300, 66); dump(j, d / 'visual.json')
+    j, d = add(k, 16 + n * 316, 126, 300, 76); dump(j, d / 'visual.json')
 
 G, R, V = 'This group', 'RRNC', 'Virginia'
 W, X = 408, [16, 436, 856]
-Y1, Y2, H = 204, 456, 240
-j, d = add(chart, X[0], Y1, W, H); dump(j, d / 'visual.json')     # average points by program year (copied from page 1)
+Y1, Y2, H = 210, 456, 238
+j, d = add(chart, X[0], Y1, W, H)
+j['visual']['visualContainerObjects']['subTitle'] = [{'properties': {'show': L('false')}}]
+dump(j, d / 'visual.json')     # average points by program year (copied from page 1)
 make_chart('clusteredColumnChart', X[1], Y1, W, H, 'Quality ratings: share of sites',
            col('Rating Levels', 'Level', 'Quality rating'),
            [mea('Group level share', G), mea('RRNC level share', R), mea('Virginia level share', V)])
