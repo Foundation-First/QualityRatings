@@ -196,7 +196,7 @@ for name, fmt, dax in MEAS:
     blk.append(f"{T}measure '{name}' =")
     blk += [T * 3 + ln for ln in dax.split('\n')]
     if fmt: blk.append(f"{T*2}formatString: {fmt}")
-    blk += [f"{T*2}lineageTag: {guid('m.' + name)}", '']
+    blk += [f"{T*2}lineageTag: {guid('m.' + name + ('.2' if name == 'As of' else ''))}", '']
 pp = SM / 'tables' / 'Published Scores.tmdl'
 t = pp.read_text(encoding='utf-8')
 t = re.sub(r"(?m)^\tmeasure '(?:" + '|'.join(re.escape(n) for n in [m[0] for m in MEAS] + ['Latest Start']) + r")' =.*\n(?:(?:\t\t.*)?\n)*", '', t)   # remove only our own measure blocks
