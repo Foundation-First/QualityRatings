@@ -144,6 +144,41 @@ def grouped_bars(measure_names, item_field, fmt, items_sort=None, who=WHO):
     return spec
 
 
+def dot_plot(measure_names, item_field, fmt, who=WHO):
+    """One row per item, one dot per group on a shared score axis (like the site's program-type chart)."""
+    keys = list(measure_names)
+    spec = copy.deepcopy(BASE)
+    spec['transform'] = [
+        {'calculate': "datum['" + item_field + "'] ? datum['" + item_field + "'] : '(Blank)'", 'as': 'Item'},
+        {'fold': keys, 'as': ['key', 'value']},
+        {'filter': 'isValid(datum.value)'},
+        {'calculate': json.dumps(who) + '[indexof(' + json.dumps(keys) + ', datum.key)]', 'as': 'Who'},
+        {'calculate': "datum.Who === 'This group' ? datum.value : null", 'as': 'gv'},
+        {'joinaggregate': [{'op': 'max', 'field': 'gv', 'as': 'groupVal'}], 'groupby': ['Item']}]
+    color = {'field': 'Who', 'type': 'nominal', 'sort': who, 'scale': {'domain': who, 'range': [NAVY, GREEN, GREY][:len(who)]},
+             'legend': {'orient': 'top', 'title': None, 'labelFontSize': 12, 'symbolType': 'circle'}}
+    x = {'field': 'value', 'type': 'quantitative', 'scale': {'zero': False, 'nice': True}, 'axis': {'title': None, 'grid': False, 'labelFontSize': 12}}
+    y = {'field': 'Item', 'type': 'nominal', 'axis': {'title': None, 'ticks': False, 'domain': False, 'labelFontSize': 13, 'labelLimit': 150}, 'scale': {'paddingInner': 0.4}}
+    spec['encoding'] = {'y': y}
+    spec['layer'] = [
+        {'transform': [{'aggregate': [{'op': 'min', 'field': 'value', 'as': 'lo'}, {'op': 'max', 'field': 'value', 'as': 'hi'}], 'groupby': ['Item']}],
+         'mark': {'type': 'rule', 'color': '#D5DDE3', 'strokeWidth': 2},
+         'encoding': {'x': {'field': 'lo', 'type': 'quantitative'}, 'x2': {'field': 'hi'}}},
+        {'transform': [{'calculate': "datum.Who === 'Virginia' ? 0 : datum.Who === 'RRNC' ? 1 : 2", 'as': 'z'}],
+         'mark': {'type': 'circle', 'size': 170, 'opacity': 1},
+         'encoding': {'x': x, 'color': color, 'order': {'field': 'z', 'type': 'quantitative'}}},
+        {'transform': [{'filter': "datum.Who === 'This group'"}],
+         'mark': {'type': 'text', 'dy': -14, 'fontSize': 12, 'fontWeight': 'bold', 'color': NAVY},
+         'encoding': {'x': {'field': 'value', 'type': 'quantitative'}, 'text': {'field': 'value', 'type': 'quantitative', 'format': fmt}}},
+        {'transform': [{'filter': "datum.Who === 'RRNC' && datum.value !== datum.groupVal"}],
+         'mark': {'type': 'text', 'dy': -28, 'fontSize': 12, 'fontWeight': 'bold', 'color': '#4C7A12'},
+         'encoding': {'x': {'field': 'value', 'type': 'quantitative'}, 'text': {'field': 'value', 'type': 'quantitative', 'format': fmt}}},
+        {'transform': [{'filter': "datum.Who === 'Virginia'"}],
+         'mark': {'type': 'text', 'dy': 16, 'fontSize': 12, 'fontWeight': 'bold', 'color': '#5F6368'},
+         'encoding': {'x': {'field': 'value', 'type': 'quantitative'}, 'text': {'field': 'value', 'type': 'quantitative', 'format': fmt}}}]
+    return spec
+
+
 LEVELS = ['Exceeds Expectations', 'Meets Expectations', 'Needs Support']
 RATINGS_SPEC = copy.deepcopy(BASE)
 RATINGS_SPEC.update({
@@ -179,9 +214,9 @@ dump(j, d / 'visual.json')
 
 deneb(X[1], YS[0], W, H, 'Quality ratings: share of sites', col('Rating Levels', 'Level'),
       [mea('Group level share'), mea('RRNC level share'), mea('Virginia level share')], RATINGS_SPEC)
-deneb(X[0], YS[1], W, H, 'Average points by program type', col('Sites-Orgs', 'cr720_providertypename'),
+deneb(X[0], YS[1], W, H, 'Average score by program type', col('Sites-Orgs', 'cr720_providertypename'),
       [mea('Average points'), mea('RRNC average points'), mea('Virginia average points')],
-      grouped_bars(['Average points', 'RRNC average points', 'Virginia average points'], 'cr720_providertypename', 'd'))
+      dot_plot(['Average points', 'RRNC average points', 'Virginia average points'], 'cr720_providertypename', 'd'))
 deneb(X[1], YS[1], W, H, 'Honor Roll: share of sites', col('Detail', 'Item'),
       [mea('Group detail share'), mea('RRNC detail share'), mea('Virginia detail share')],
       grouped_bars(['Group detail share', 'RRNC detail share', 'Virginia detail share'], 'Item', '.0%', ['Excellence', 'Improvement', 'Infant/Toddler']), ('Section', ['Honor Roll']))
