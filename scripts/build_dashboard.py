@@ -44,9 +44,10 @@ fields = lambda j: [p['queryRef'] for d in (j['visual'].get('query', {}).get('qu
 title_card = next(j for j in src['cardVisual'] if any('Report title' in r for r in fields(j)))
 slicers = sorted(src['slicer'], key=lambda j: j['position']['x'])
 chart = src['lineChart'][0]
-asof_card = next(j for j in src['cardVisual'] if any('As of' in r for r in fields(j)))
+boxes = sorted(src['textbox'], key=lambda j: 'Internal use' in json.dumps(j))     # the "Data as of" box first, the footer last
+asof_card = boxes[0]      # the "Data as of" line (a text box or a card, whichever page 1 uses)
 kpis = [next(j for j in src['cardVisual'] if any('Published Scores.' + m in r for r in fields(j))) for m in ('Sites rated', 'Average points', 'Gap vs RRNC', 'Gap vs Virginia')]
-footer = src['textbox'][0]
+footer = boxes[-1]
 L = lambda v: {'expr': {'Literal': {'Value': v}}}
 
 
