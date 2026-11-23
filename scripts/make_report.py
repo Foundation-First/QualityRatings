@@ -136,12 +136,12 @@ def main():
         LCOL[i], LEVELS[i][0], LEVELS[i][1], LEVELS[i][2], pcell(cnt[i], n), pcell(rl[i], reg['2025-26']['n']), pcell(sl[i], st['2025-26']['n'])) for i in (2, 1, 0))
     nrow = ''.join('<td class="n">%d</td>' % len(byyr[y]) for y in YRS)
     listing = ''
-    if n <= 30:
-        srt = sorted(m, key=lambda s: -s['tp'])
+    if n == 1 or a.sites:      # list sites only for a single site or a hand-picked group, never to rank a locality's sites against each other
+        srt = sorted(m, key=lambda s: s['name'])
         listing = '<h2>%s</h2><table><thead><tr><th>Site</th><th>Type</th><th class="n">2023-24</th><th class="n">2024-25</th><th class="n">2025-26</th><th>Rating</th></tr></thead><tbody>' % ('Sites' if n > 1 else 'Site detail') + ''.join(
             '<tr><td>%s</td><td>%s</td>' % (esc(s['name']), TL[s['type']]) + ''.join('<td class="n">%s</td>' % (pts(s, y) if pts(s, y) is not None else '-') for y in YRS) + '<td>%s</td></tr>' % esc(s['rating']) for s in srt) + '</tbody></table>'
     else:
-        listing = '<p class="small">%d sites; the site list is left off to keep this to one page.</p>' % n
+        listing = ''
     asof = a.asof or META['vdoeWorkbook']
     d1, d2 = avg - reg['2025-26']['avg'], avg - st['2025-26']['avg']
     css = ("@page{size:letter;margin:.5in}body{margin:0;font:16px/1.4 'Nunito Sans',system-ui,sans-serif;color:%s;background:#fff}.pg{max-width:8in;margin:0 auto;padding:0 8px 20px}"

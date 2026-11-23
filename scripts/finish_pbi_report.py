@@ -90,22 +90,22 @@ for n, (prop, label) in enumerate([('Sites rated', 'Sites rated'), ('Average poi
 _, t = pick('tableEx')[0]
 t['visual']['query'] = {'queryState': {'Values': {'projections': [named(col(RL, 'Level'), 'Quality rating'), named(mea('Group rating level'), 'This group'), named(mea('RRNC rating level'), 'RRNC'), named(mea('Virginia rating level'), 'Virginia')]}}}
 titled(t, 'Ratings in the latest program year: sites (share)')
-place(t, 20, 286, 776, 140, 9)
+place(t, 20, 286, 776, 176, 9)
 # --- line chart
 _, l = pick('lineChart')[0]
-l['visual']['query'] = {'queryState': {'Category': {'projections': [col(PY, 'cr720_name')]},
+l['visual']['query'] = {'queryState': {'Category': {'projections': [named(col(PY, 'cr720_name'), 'Program year')]},
                                        'Y': {'projections': [named(mea('Group average by year'), 'This group'), named(mea('RRNC average by year'), 'RRNC'), named(mea('Virginia average by year'), 'Virginia')]}}}
 titled(l, 'Average total points by program year')
-place(l, 20, 436, 776, 262, 10)
-# --- site matrix
-_, m = pick('pivotTable')[0]
-m['visual']['query'] = {'queryState': {'Rows': {'projections': [named(col(PS, 'cr720_sitename'), 'Site')]}, 'Columns': {'projections': [named(col(PY, 'cr720_name'), 'Program year')]}, 'Values': {'projections': [named(mea('Total points'), 'Total points')]}}}
-titled(m, 'Total points by site and program year')
-place(m, 20, 710, 776, 296, 11)
+place(l, 20, 474, 776, 450, 10)
+# --- no site-by-site matrix: sites are a filter only, never a list that compares them
+for f, j in pick('pivotTable'):
+    shutil.rmtree(f.parent)
+    vis.pop('pivotTable:' + f.parent.name)
+
 # --- footer
 _, tb = pick('textbox')[0]
 tb['visual']['objects']['general'][0]['properties']['paragraphs'] = [{'textRuns': [{'value': 'Internal use. Approval is needed before sharing outside Foundation First / RRNC. Source: VDOE VQB5 Quality Rating Data (public); Virginia figures from VDOE statewide files. Scores run from 100 to 800. No Provider 360 or other internal data is included.', 'textStyle': {'fontSize': '10pt', 'color': '#4f5f6b'}}]}]
-place(tb, 20, 1012, 776, 36, 12)
+place(tb, 20, 940, 776, 40, 12)
 
 for f, j in vis.values():
     json.dump(j, open(f, 'w', encoding='utf-8'), indent=2)
