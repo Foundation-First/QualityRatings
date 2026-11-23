@@ -1,8 +1,8 @@
-"""Build page 3 ("Charts") of the Power BI one-pager: native column/bar charts, same fields as pages 1-2.
+"""Build the 16:9 "Dashboard" page of the Power BI report: KPI cards plus six native charts on one screen.
 
-Run with Power BI Desktop closed:  python scripts/build_page3.py internal/powerbi-work
-Needs pages 1 and 2 (build_page2.py) and the numeric measures (build_powerbi.py --measures-only).
-Re-running rebuilds page 3 from scratch.
+Run with Power BI Desktop closed:  python scripts/build_dashboard.py internal/powerbi-work
+Needs page 1 (the one-pager) and the numeric measures (build_powerbi.py --measures-only).
+Re-running rebuilds the page from scratch; any older pages after page 1 are removed.
 """
 import copy, json, shutil, sys, uuid
 from pathlib import Path
@@ -15,28 +15,37 @@ dump = lambda j, p: p.write_text(json.dumps(j, indent=2), encoding='utf-8')
 order = load(pages_json)
 P1 = RP / 'pages' / order['pageOrder'][0]
 
-if len(order['pageOrder']) > 2:
-    P3 = RP / 'pages' / order['pageOrder'][2]
+for old in order['pageOrder'][2:]:
+    shutil.rmtree(RP / 'pages' / old, ignore_errors=True)
+order['pageOrder'] = order['pageOrder'][:2]
+if len(order['pageOrder']) > 1:
+    P3 = RP / 'pages' / order['pageOrder'][1]
     shutil.rmtree(P3 / 'visuals', ignore_errors=True)
 else:
     pid = uuid.uuid4().hex[:20]
     P3 = RP / 'pages' / pid
     P3.mkdir()
     order['pageOrder'].append(pid)
-    dump(order, pages_json)
+order['activePageName'] = P3.name
+dump(order, pages_json)
 pg = load(P1 / 'page.json')
-pg.update(name=P3.name, displayName='Charts')
+pg.update(name=P3.name, displayName='Dashboard', width=1280, height=720)
 dump(pg, P3 / 'page.json')
 (P3 / 'visuals').mkdir()
 
 src = {}
 for f in (P1 / 'visuals').glob('*/visual.json'):
     j = load(f)
+    if 'visual' not in j:      # a visual group the user made in Desktop
+        continue
     src.setdefault(j['visual']['visualType'], []).append(j)
+FIELDS = None
 fields = lambda j: [p['queryRef'] for d in (j['visual'].get('query', {}).get('queryState', {}) or {}).values() for p in d.get('projections', [])]
 title_card = next(j for j in src['cardVisual'] if any('Report title' in r for r in fields(j)))
 slicers = sorted(src['slicer'], key=lambda j: j['position']['x'])
 chart = src['lineChart'][0]
+asof_card = next(j for j in src['cardVisual'] if any('As of' in r for r in fields(j)))
+kpis = [next(j for j in src['cardVisual'] if any('Published Scores.' + m in r for r in fields(j))) for m in ('Sites rated', 'Average points', 'Gap vs RRNC', 'Gap vs Virginia')]
 footer = src['textbox'][0]
 L = lambda v: {'expr': {'Literal': {'Value': v}}}
 
@@ -51,6 +60,7 @@ z = [0]
 def add(template, x, y, w, h):
     j = copy.deepcopy(template)
     j['name'] = uuid.uuid4().hex[:20]
+    j.pop('parentGroupName', None)
     if template['visual']['visualType'] != 'slicer':
         j.pop('filterConfig', None)
     j['position'].update(x=x, y=y, width=w, height=h, z=z[0], tabOrder=z[0])
@@ -73,38 +83,47 @@ def make_chart(kind, x, y, w, h, title, category, series, section=None):
     v['visualType'] = kind
     v['query'] = {'queryState': {'Category': {'projections': [category]}, 'Y': {'projections': series}}}
     v['visualContainerObjects']['title'][0]['properties']['text'] = L("'" + title + "'")
-    v['objects'] = {'labels': [{'properties': {'show': L('true'), 'fontSize': L('12D')}}],
+    v['objects'] = {'labels': [{'properties': {'show': L('true'), 'fontSize': L('12D'), 'labelPosition': L("'OutsideEnd'")}}],
+                    'valueAxis': [{'properties': {'show': L('false')}}],
                     'legend': [{'properties': {'show': L('true'), 'position': L("'Bottom'"), 'fontSize': L('12D')}}]}
     if section:
         j['filterConfig'] = section_filter(section)
     dump(j, d / 'visual.json')
 
 
-# title band and the three dropdowns (same fields as page 1)
-j, d = add(title_card, 0, 0, 816, 76); dump(j, d / 'visual.json')
-for n, s in enumerate(slicers):
-    j, d = add(s, 20 + n * 262, 86, 250, 60)
-    j['filterConfig'] = copy.deepcopy(s.get('filterConfig', {}))
+# title band, dropdowns, as-of line
+j, d = add(title_card, 0, 0, 1280, 64); dump(j, d / 'visual.json')
+for n, s_ in enumerate(slicers):
+    j, d = add(s_, 16 + n * 262, 70, 250, 52)
+    j['filterConfig'] = copy.deepcopy(s_.get('filterConfig', {}))
     if not j['filterConfig']: j.pop('filterConfig')
     dump(j, d / 'visual.json')
+j, d = add(asof_card, 812, 78, 452, 36); dump(j, d / 'visual.json')
+# four number cards
+for n, k in enumerate(kpis):
+    j, d = add(k, 16 + n * 316, 128, 300, 66); dump(j, d / 'visual.json')
 
 G, R, V = 'This group', 'RRNC', 'Virginia'
-make_chart('clusteredColumnChart', 20, 160, 380, 270, 'Quality ratings, latest year: share of sites',
+W, X = 408, [16, 436, 856]
+Y1, Y2, H = 204, 456, 240
+j, d = add(chart, X[0], Y1, W, H); dump(j, d / 'visual.json')     # average points by program year (copied from page 1)
+make_chart('clusteredColumnChart', X[1], Y1, W, H, 'Quality ratings: share of sites',
            col('Rating Levels', 'Level', 'Quality rating'),
            [mea('Group level share', G), mea('RRNC level share', R), mea('Virginia level share', V)])
-make_chart('clusteredBarChart', 416, 160, 380, 270, 'Average points by program type',
+make_chart('clusteredColumnChart', X[2], Y1, W, H, 'Average points by program type',
            col('Sites-Orgs', 'cr720_providertypename', 'Program type'),
            [mea('Average points', G), mea('RRNC average points', R), mea('Virginia average points', V)])
-make_chart('clusteredColumnChart', 20, 442, 380, 270, 'Average points by component',
+make_chart('clusteredColumnChart', X[0], Y2, W, H, 'Average points by component',
            col('Detail', 'Item', 'Component'),
            [mea('Group detail points', G), mea('RRNC detail points', R), mea('Virginia detail points', V)], 'Points')
-make_chart('clusteredColumnChart', 416, 442, 380, 270, 'Honor Roll: share of sites',
+make_chart('clusteredColumnChart', X[1], Y2, W, H, 'Honor Roll: share of sites',
            col('Detail', 'Item', 'Honor Roll'),
            [mea('Group detail share', G), mea('RRNC detail share', R), mea('Virginia detail share', V)], 'Honor Roll')
-make_chart('clusteredColumnChart', 20, 724, 776, 240, 'Years in VQB5: share of sites',
+make_chart('clusteredColumnChart', X[2], Y2, W, H, 'Years in VQB5: share of sites',
            col('Detail', 'Item', 'Years in VQB5'),
            [mea('Group detail share', G), mea('RRNC detail share', R)], 'Years in VQB5')
 
-j, d = add(footer, 20, 976, 776, 40)
+j, d = add(footer, 16, 700, 1248, 20)
+j['visual']['objects']['general'][0]['properties']['paragraphs'] = [{'textRuns': [{'value': 'Internal use. Approval is needed before sharing outside Foundation First / RRNC. Source: VDOE VQB5 public data. No Provider 360 data.', 'textStyle': {'fontSize': '10pt', 'color': '#4f5f6b'}}]}]
 dump(j, d / 'visual.json')
-print('Page 3 built:', P3.name, '-', len(list((P3 / 'visuals').glob('*'))), 'visuals')
+print('Dashboard built:', P3.name, '-', len(list((P3 / 'visuals').glob('*'))), 'visuals')
