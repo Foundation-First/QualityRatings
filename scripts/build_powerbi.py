@@ -70,6 +70,38 @@ if not KEEP_TABLES:
 
 # ---------------------------------------------------------------- measures
 PS, SO, PY = "'Published Scores'", "'Sites-Orgs'", "'Program Year'"
+
+def detail_measure(rrnc):
+    """Text for one column of the page-2 tables (points, Honor Roll, years in VQB5), for the group or for all of RRNC."""
+    R = f"REMOVEFILTERS({PS}[cr720_county], {PS}[cr720_sitename]), " if rrnc else ""
+    sites = f"CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), {R}{PY}[cr720_name] = ly)"
+    def cnt(flag): return f"CALCULATE(DISTINCTCOUNT({PS}[cr720_vacsiteid]), {R}{PY}[cr720_name] = ly, {PS}[{flag}] = TRUE())"
+    def avg(col, extra=""): return f"CALCULATE(AVERAGE({PS}[{col}]), {R}{PY}[cr720_name] = ly{extra})"
+    def prov(name): return f"CALCULATETABLE(VALUES({PS}[cr720_provider]), {R}{PY}[cr720_name] = {name})"
+    ta = lambda v: f"TREATAS({v}, {PS}[cr720_provider])"
+    return f"""VAR sec = SELECTEDVALUE(Detail[Section])
+VAR it = SELECTEDVALUE(Detail[Item])
+VAR ly = [Latest Year]
+VAR y = VALUE(LEFT(ly, 4))
+VAR p1 = (y - 1) & "-" & y
+VAR p2 = (y - 2) & "-" & (y - 1)
+VAR tot = {sites}
+VAR pv = SWITCH(it, "Interaction points", {avg('cr720_interactionpoints')}, "Curriculum points", {avg('cr720_curriculumpoints')}, "Total points", {avg('cr720_totalpoints')})
+VAR hn = COALESCE(SWITCH(it, "Excellence", {cnt('cr720_honorroll_excellence')}, "Improvement", {cnt('cr720_honorroll_improvement')}, "Infant/Toddler", {cnt('cr720_honorroll_infanttoddler')}), 0)
+VAR cur = {prov('ly')}
+VAR prev1 = {prov('p1')}
+VAR prev2 = {prov('p2')}
+VAR firstSet = EXCEPT(cur, prev1)
+VAR secondSet = EXCEPT(INTERSECT(cur, prev1), prev2)
+VAR thirdSet = INTERSECT(INTERSECT(cur, prev1), prev2)
+VAR tn = SWITCH(it, "First year", COUNTROWS(firstSet), "Second year", COUNTROWS(secondSet), "Third year or more", COUNTROWS(thirdSet))
+VAR tavg = SWITCH(it, "First year", {avg('cr720_totalpoints', ', ' + ta('firstSet'))}, "Second year", {avg('cr720_totalpoints', ', ' + ta('secondSet'))}, "Third year or more", {avg('cr720_totalpoints', ', ' + ta('thirdSet'))})
+RETURN SWITCH(sec,
+    "Points", FORMAT(pv, "0"),
+    "Honor Roll", hn & " (" & FORMAT(DIVIDE(hn, tot, 0), "0%") & ")",
+    "Years in VQB5", COALESCE(tn, 0) & IF(COALESCE(tn, 0) = 1, " site", " sites") & IF(COALESCE(tn, 0) > 0, ", average " & FORMAT(tavg, "0"), ""),
+    BLANK())"""
+
 MEAS = [
  ('Latest Year', None, f"""MAXX(FILTER(ALL({PY}), CALCULATE(COUNTROWS({PS}), REMOVEFILTERS({PS}[cr720_county], {PS}[cr720_sitename])) > 0), {PY}[cr720_name])"""),
  ('Sites rated', '0', f"""VAR ly = [Latest Year]
@@ -112,6 +144,14 @@ VAR n = SWITCH(lvl,
     "Meets Expectations", CALCULATE(MAX(Virginia[Meets]), Virginia[StartYear] = yr, Virginia[Type] = vt),
     "Exceeds Expectations", CALCULATE(MAX(Virginia[Exceeds]), Virginia[StartYear] = yr, Virginia[Type] = vt))
 RETURN n & " (" & FORMAT(DIVIDE(n, tot, 0), "0%") & ")\""""),
+ ('Detail group', None, detail_measure(False)),
+ ('Detail RRNC', None, detail_measure(True)),
+ ('Detail Virginia', None, """VAR sec = SELECTEDVALUE(Detail[Section])
+VAR vt = [Virginia type]
+VAR yr = MAX(Virginia[StartYear])
+VAR vs = CALCULATE(MAX(Virginia[Sites]), Virginia[StartYear] = yr, Virginia[Type] = vt)
+VAR v = SWITCH(vt, "Center", MAX(Detail[VA_Center]), "Public School", MAX(Detail[VA_PublicSchool]), "Family Day Home", MAX(Detail[VA_FamilyDayHome]), MAX(Detail[VA_All]))
+RETURN SWITCH(sec, "Points", FORMAT(v, "0"), "Honor Roll", v & " (" & FORMAT(DIVIDE(v, vs, 0), "0%") & ")", BLANK())"""),
  ('Report title', None, f"""IF(ISFILTERED({PS}[cr720_sitename]), SELECTEDVALUE({PS}[cr720_sitename], "Selected sites"),
     IF(ISFILTERED({PS}[cr720_county]), SELECTEDVALUE({PS}[cr720_county], "Selected localities"), "Ready Region North Central"))
     & IF(SELECTEDVALUE({SO}[cr720_providertypename]) <> BLANK(), " - " & SELECTEDVALUE({SO}[cr720_providertypename]), "")"""),
