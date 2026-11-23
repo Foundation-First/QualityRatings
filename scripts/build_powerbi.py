@@ -15,6 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 STAGE = int(next((a.split('=')[1] for a in sys.argv if a.startswith('--stage=')), 3))   # 0 = remove everything added; 1 = + tables; 2 = + measures; 3 = + report page (default canvas size); 4 = + Letter-size page
+KEEP_TABLES = '--keep-tables' in sys.argv   # tables were added in Desktop; do not write or remove them
 PBI = Path(next((a.split('=',1)[1] for a in sys.argv if a.startswith('--project=')), ROOT / 'internal' / 'powerbi'))   # folder that holds the .pbip
 SM = next(PBI.glob('*.SemanticModel')) / 'definition'
 RP = next(PBI.glob('*.Report')) / 'definition'
@@ -41,9 +42,10 @@ for c, dt, fmt in cols:
 out += [T + 'partition Virginia = m', T * 2 + 'mode: import', T * 2 + 'source =', T * 4 + 'let',
         T * 4 + '  Source = #table(type table [StartYear = Int64.Type, Type = text, Sites = Int64.Type, AvgPoints = number, Needs = Int64.Type, Meets = Int64.Type, Exceeds = Int64.Type], {' + ('{' + data + '}' if False else data) + '})',
         T * 4 + 'in', T * 4 + '  Source', '']
-(SM / 'tables' / 'Virginia.tmdl').write_text('\n'.join(out), encoding='utf-8')
-if STAGE < 1:
-    (SM / 'tables' / 'Virginia.tmdl').unlink()
+if not KEEP_TABLES:
+    (SM / 'tables' / 'Virginia.tmdl').write_text('\n'.join(out), encoding='utf-8')
+    if STAGE < 1:
+        (SM / 'tables' / 'Virginia.tmdl').unlink()
 
 # ---------------------------------------------------------------- rating levels
 lv = ['table \'Rating Levels\'', T + 'lineageTag: ' + guid('Levels'), '',
@@ -51,18 +53,20 @@ lv = ['table \'Rating Levels\'', T + 'lineageTag: ' + guid('Levels'), '',
       T + 'column Order', T * 2 + 'dataType: int64', T * 2 + 'formatString: 0', T * 2 + 'lineageTag: ' + guid('Levels.Order'), T * 2 + 'summarizeBy: none', T * 2 + 'sourceColumn: [Order]', '',
       T + "partition 'Rating Levels' = calculated", T * 2 + 'mode: import',
       T * 2 + 'source = DATATABLE("Level", STRING, "Order", INTEGER, {{"Exceeds Expectations", 1}, {"Meets Expectations", 2}, {"Needs Support", 3}})', '']
-(SM / 'tables' / 'Rating Levels.tmdl').write_text('\n'.join(lv), encoding='utf-8')
-if STAGE < 1:
-    (SM / 'tables' / 'Rating Levels.tmdl').unlink()
+if not KEEP_TABLES:
+    (SM / 'tables' / 'Rating Levels.tmdl').write_text('\n'.join(lv), encoding='utf-8')
+    if STAGE < 1:
+        (SM / 'tables' / 'Rating Levels.tmdl').unlink()
 
 # ---------------------------------------------------------------- model refs
-mp = SM / 'model.tmdl'
-m = mp.read_text(encoding='utf-8')
-for t in ('Virginia', "'Rating Levels'"):
-    m = m.replace('ref table ' + t + '\n', '').rstrip('\n') + '\n'
-    if STAGE >= 1:
-        m += 'ref table ' + t + '\n'
-mp.write_text(m, encoding='utf-8')
+if not KEEP_TABLES:
+    mp = SM / 'model.tmdl'
+    m = mp.read_text(encoding='utf-8')
+    for t in ('Virginia', "'Rating Levels'"):
+        m = m.replace('ref table ' + t + '\n', '').rstrip('\n') + '\n'
+        if STAGE >= 1:
+            m += 'ref table ' + t + '\n'
+    mp.write_text(m, encoding='utf-8')
 
 # ---------------------------------------------------------------- measures
 PS, SO, PY = "'Published Scores'", "'Sites-Orgs'", "'Program Year'"
@@ -117,7 +121,7 @@ for name, fmt, dax in MEAS:
     blk += [f"{T*2}lineageTag: {guid('m.' + name)}", '']
 pp = SM / 'tables' / 'Published Scores.tmdl'
 t = pp.read_text(encoding='utf-8')
-t = re.sub(r"\n\tmeasure 'Latest Start' =.*?(?=\n\tpartition )", '\n', t, flags=re.S)
+t = re.sub(r"(?m)^\tmeasure '(?:" + '|'.join(re.escape(n) for n, _, _ in MEAS) + r")' =\n(?:(?:\t\t.*)?\n)*", '', t)   # remove only our own measure blocks
 i = t.index("\n\tpartition 'Published Scores'")
 t = t[:i].rstrip('\n') + '\n\n' + ('\n'.join(blk) if STAGE >= 2 else '') + t[i:]
 pp.write_text(t, encoding='utf-8')
